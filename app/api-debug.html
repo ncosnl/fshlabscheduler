@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Debug Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .test {
+            margin: 20px 0;
+            padding: 15px;
+            background: #2a2a2a;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #000;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+        .warning { color: #ffff00; }
+    </style>
+</head>
+<body>
+    <h1>🔍 FSH Lab Scheduler - API Debug Tool</h1>
+    <p>This page will test if your backend is working.</p>
+
+    <div class="test">
+        <h3>Test 1: Check if Functions are deployed</h3>
+        <button onclick="testFunctionsExist()">Run Test 1</button>
+        <div id="test1-result" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 2: Check Database Connection</h3>
+        <button onclick="testDatabase()">Run Test 2</button>
+        <div id="test2-result" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 3: Test Login Endpoint</h3>
+        <button onclick="testLogin()">Run Test 3</button>
+        <div id="test3-result" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 4: Test Signup Endpoint</h3>
+        <button onclick="testSignup()">Run Test 4</button>
+        <div id="test4-result" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>Test 5: Check Network Response</h3>
+        <button onclick="testNetworkResponse()">Run Test 5</button>
+        <div id="test5-result" class="result"></div>
+    </div>
+
+    <hr>
+    <button onclick="runAllTests()" style="background: #ffff00; font-size: 16px;">🚀 RUN ALL TESTS</button>
+
+    <script>
+        const API_BASE = window.location.origin + '/api';
+
+        function log(testId, message, type = 'info') {
+            const result = document.getElementById(testId + '-result');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            result.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+        }
+
+        function clear(testId) {
+            document.getElementById(testId + '-result').innerHTML = '';
+        }
+
+        async function testFunctionsExist() {
+            clear('test1');
+            log('test1', '🔍 Checking if API endpoint exists...');
+            
+            try {
+                const response = await fetch(API_BASE + '/auth/login', {
+                    method: 'GET'
+                });
+                
+                log('test1', `Status: ${response.status}`);
+                log('test1', `Status Text: ${response.statusText}`);
+                log('test1', `Content-Type: ${response.headers.get('content-type')}`);
+                
+                const text = await response.text();
+                log('test1', `Response Length: ${text.length} characters`);
+                log('test1', `Response Preview: ${text.substring(0, 200)}...`);
+                
+                if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                    log('test1', '❌ FAIL: Getting HTML instead of API response!', 'error');
+                    log('test1', '💡 This means Functions are NOT deployed correctly.', 'warning');
+                } else if (text.length === 0) {
+                    log('test1', '❌ FAIL: Empty response!', 'error');
+                    log('test1', '💡 Functions file might be missing or not deployed.', 'warning');
+                } else {
+                    log('test1', '✅ PASS: Got a response from API!', 'success');
+                }
+            } catch (error) {
+                log('test1', `❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDatabase() {
+            clear('test2');
+            log('test2', '🔍 Testing database connection...');
+            
+            try {
+                const response = await fetch(API_BASE + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: 'nonexistent@firstasia.edu.ph', 
+                        password: 'test' 
+                    })
+                });
+                
+                log('test2', `Status: ${response.status}`);
+                
+                const text = await response.text();
+                log('test2', `Raw Response: ${text}`);
+                
+                if (text.includes('Database not configured')) {
+                    log('test2', '❌ FAIL: Database binding is missing!', 'error');
+                    log('test2', '💡 Go to Cloudflare Dashboard → Settings → Functions → D1 bindings', 'warning');
+                    log('test2', '💡 Add binding: Variable name = DB, Database = fsh-lab-scheduler-db', 'warning');
+                } else {
+                    try {
+                        const json = JSON.parse(text);
+                        log('test2', '✅ PASS: Database is responding!', 'success');
+                        log('test2', `Response: ${JSON.stringify(json, null, 2)}`);
+                    } catch (e) {
+                        log('test2', '⚠️ Got response but not valid JSON', 'warning');
+                        log('test2', text);
+                    }
+                }
+            } catch (error) {
+                log('test2', `❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            clear('test3');
+            log('test3', '🔍 Testing login endpoint...');
+            
+            try {
+                const response = await fetch(API_BASE + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: 'test@firstasia.edu.ph', 
+                        password: 'wrongpassword' 
+                    })
+                });
+                
+                log('test3', `Status: ${response.status}`);
+                
+                const text = await response.text();
+                
+                try {
+                    const json = JSON.parse(text);
+                    
+                    if (json.error === 'Invalid credentials') {
+                        log('test3', '✅ PASS: Login endpoint working correctly!', 'success');
+                        log('test3', 'This error is expected for wrong credentials.');
+                    } else {
+                        log('test3', `Response: ${JSON.stringify(json, null, 2)}`);
+                    }
+                } catch (e) {
+                    log('test3', '❌ FAIL: Not returning JSON!', 'error');
+                    log('test3', `Response: ${text.substring(0, 500)}`);
+                }
+            } catch (error) {
+                log('test3', `❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSignup() {
+            clear('test4');
+            log('test4', '🔍 Testing signup endpoint...');
+            
+            const testEmail = `test${Date.now()}@firstasia.edu.ph`;
+            
+            try {
+                const response = await fetch(API_BASE + '/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: testEmail,
+                        password: 'test123456',
+                        role: 'Teacher'
+                    })
+                });
+                
+                log('test4', `Status: ${response.status}`);
+                
+                const text = await response.text();
+                
+                try {
+                    const json = JSON.parse(text);
+                    
+                    if (json.success) {
+                        log('test4', '✅ PASS: Signup endpoint working!', 'success');
+                        log('test4', `Created user: ${testEmail}`);
+                    } else if (json.error) {
+                        log('test4', `Response: ${JSON.stringify(json, null, 2)}`);
+                        
+                        if (json.error.includes('Database not configured')) {
+                            log('test4', '❌ Database binding missing!', 'error');
+                        }
+                    }
+                } catch (e) {
+                    log('test4', '❌ FAIL: Not returning JSON!', 'error');
+                    log('test4', `Response: ${text.substring(0, 500)}`);
+                }
+            } catch (error) {
+                log('test4', `❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testNetworkResponse() {
+            clear('test5');
+            log('test5', '🔍 Checking raw network response...');
+            
+            try {
+                const response = await fetch(API_BASE + '/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                log('test5', '=== Response Headers ===');
+                response.headers.forEach((value, key) => {
+                    log('test5', `${key}: ${value}`);
+                });
+                
+                log('test5', '\n=== Response Body ===');
+                const text = await response.text();
+                log('test5', text.substring(0, 1000));
+                
+                if (text.length === 0) {
+                    log('test5', '\n❌ CRITICAL: Response is EMPTY!', 'error');
+                    log('test5', '💡 This is causing "Unexpected end of JSON input" error', 'warning');
+                    log('test5', '💡 Possible causes:', 'warning');
+                    log('test5', '   1. Functions not deployed', 'warning');
+                    log('test5', '   2. Wrong file location (must be functions/api/[[route]].js)', 'warning');
+                    log('test5', '   3. Deployment failed', 'warning');
+                }
+            } catch (error) {
+                log('test5', `❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            await testFunctionsExist();
+            await new Promise(r => setTimeout(r, 500));
+            await testDatabase();
+            await new Promise(r => setTimeout(r, 500));
+            await testLogin();
+            await new Promise(r => setTimeout(r, 500));
+            await testSignup();
+            await new Promise(r => setTimeout(r, 500));
+            await testNetworkResponse();
+        }
+    </script>
+</body>
+</html>
