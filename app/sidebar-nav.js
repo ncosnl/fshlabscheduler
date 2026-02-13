@@ -187,7 +187,7 @@ function initializeMailButton() {
     mailButton.setAttribute('title', 'Notifications');
     
     mailButton.innerHTML = `
-        <img src="../public/Mail.png" alt="Mail">
+        <img src="public/Mail.png" alt="Mail">
         <span class="notification-badge" id="notification-badge">0</span>
     `;
     
