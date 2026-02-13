@@ -175,7 +175,7 @@ window.toggleTheme = toggleTheme;
 
 function initializeMailButton() {
     // Only show mail button on dashboard page
-    if (!window.location.pathname.includes('dashboard.html')) {
+    if (!window.location.pathname.includes('dashboard')) {
         return;
     }
     
