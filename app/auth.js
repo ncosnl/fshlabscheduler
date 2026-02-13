@@ -265,7 +265,9 @@ function saveUserData(email, userData) {
 function loginUser(email, role) {
     localStorage.setItem('fsh_user_email', email);
     localStorage.setItem('fsh_user_role', role);
-    window.location.href = "dashboard.html";
+    
+    // FIXED: Use absolute path for redirect
+    window.location.href = "/dashboard.html";
 }
 
 function getInputValue(id) {
