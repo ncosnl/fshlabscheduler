@@ -1,12 +1,12 @@
 # Cloudflare Pages redirect rules
 # This file tells Cloudflare how to handle your multi-page app
 
-# Allow direct access to all HTML pages with 200 status (serve the file)
+# Serve HTML pages directly
 /dashboard.html  /dashboard.html  200
 /laboratory.html  /laboratory.html  200
 /mail.html  /mail.html  200
 /profile.html  /profile.html  200
 /index.html  /index.html  200
 
-# Fallback to index.html for the root
+# Root fallback
 /  /index.html  200
