@@ -1,5 +1,5 @@
 // ============================================================================
-// AUTH.JS - Authentication Logic
+// AUTH.JS - Authentication Logic (API Version)
 // ============================================================================
 
 // Global variables
@@ -27,7 +27,7 @@ function handleSelection(clickedBtn) {
 // LOGIN LOGIC
 // ============================================================================
 
-function handleLogin() {
+async function handleLogin() {
     const email = getInputValue('login-email').toLowerCase();
     const password = getInputValue('login-password');
 
@@ -39,22 +39,25 @@ function handleLogin() {
         return;
     }
 
-    const storedUser = getUserData(email);
-    
-    if (!storedUser) {
-        showError('login-email');
-        alert('No account found. Please sign up first.');
-        return;
+    try {
+        // Call API instead of localStorage
+        const result = await window.AuthAPI.login(email, password);
+        
+        if (result.success) {
+            // Redirect to dashboard
+            window.location.href = "dashboard.html";
+        }
+    } catch (error) {
+        if (error.message.includes('not found')) {
+            showError('login-email');
+            alert('No account found. Please sign up first.');
+        } else if (error.message.includes('password')) {
+            showError('login-password');
+            alert('Incorrect password');
+        } else {
+            alert('Login failed: ' + error.message);
+        }
     }
-    
-    if (storedUser.password !== password) {
-        showError('login-password');
-        alert('Incorrect password');
-        return;
-    }
-    
-    selectedRole = storedUser.role;
-    loginUser(email, selectedRole);
 }
 
 // ============================================================================
@@ -63,18 +66,11 @@ function handleLogin() {
 
 function confirmEmail() {
     const email = getInputValue('signup-email').toLowerCase();
-    const emailInput = document.getElementById('signup-email');
     
     clearError('signup-email');
     
     if (!validateEmailDomain(email)) {
         showError('signup-email', "Access Denied: Use school email");
-        return;
-    }
-    
-    if (getUserData(email)) {
-        showError('signup-email');
-        alert('An account with this email already exists. Please sign in.');
         return;
     }
     
@@ -90,7 +86,7 @@ function confirmEmail() {
     showView('signup-password-view');
 }
 
-function handleSignup() {
+async function handleSignup() {
     const password = getInputValue('signup-password');
     const confirmPassword = getInputValue('signup-confirm-password');
     
@@ -109,22 +105,29 @@ function handleSignup() {
         return;
     }
     
-    const userData = {
-        email: confirmedEmail,
-        password: password,
-        role: selectedRole,
-        createdAt: new Date().toISOString()
-    };
-    
-    saveUserData(confirmedEmail, userData);
-    loginUser(confirmedEmail, selectedRole);
+    try {
+        // Call API instead of localStorage
+        const result = await window.AuthAPI.signup(confirmedEmail, password, selectedRole);
+        
+        if (result.success) {
+            // Redirect to dashboard
+            window.location.href = "dashboard.html";
+        }
+    } catch (error) {
+        if (error.message.includes('already exists')) {
+            showError('signup-email');
+            alert('An account with this email already exists. Please sign in.');
+        } else {
+            alert('Signup failed: ' + error.message);
+        }
+    }
 }
 
 // ============================================================================
 // FORGOT PASSWORD LOGIC
 // ============================================================================
 
-function sendOTP() {
+async function sendOTP() {
     const email = getInputValue('forgot-email').toLowerCase();
     
     clearError('forgot-email');
@@ -134,32 +137,34 @@ function sendOTP() {
         return;
     }
     
-    const storedUser = getUserData(email);
-    if (!storedUser) {
+    try {
+        // Call API to send OTP
+        const result = await window.UsersAPI.sendPasswordResetOTP(email);
+        
+        if (result.success) {
+            const otp = result.otp; // In production, this would be sent via email
+            otpData = {
+                email: email,
+                code: otp,
+                timestamp: Date.now(),
+                expiresIn: 5 * 60 * 1000
+            };
+            
+            console.log(`OTP for ${email}: ${otp}`);
+            alert(`Your verification code is: ${otp}\n\n(In production, this would be sent to your email)`);
+            
+            const otpEmailDisplay = document.getElementById('otp-email-display');
+            if (otpEmailDisplay) {
+                otpEmailDisplay.textContent = email;
+            }
+            
+            clearInput('otp-code');
+            showView('otp-view');
+        }
+    } catch (error) {
         showError('forgot-email');
-        alert('No account found with this email.');
-        return;
+        alert('Error: ' + error.message);
     }
-    
-    const otp = generateOTP();
-    otpData = {
-        email: email,
-        code: otp,
-        timestamp: Date.now(),
-        expiresIn: 5 * 60 * 1000 // 5 minutes
-    };
-    
-    // In production, this would send an actual email
-    console.log(`OTP for ${email}: ${otp}`);
-    alert(`Your verification code is: ${otp}\n\n(In production, this would be sent to your email)`);
-    
-    const otpEmailDisplay = document.getElementById('otp-email-display');
-    if (otpEmailDisplay) {
-        otpEmailDisplay.textContent = email;
-    }
-    
-    clearInput('otp-code');
-    showView('otp-view');
 }
 
 function verifyOTP() {
@@ -196,7 +201,7 @@ function verifyOTP() {
     showView('reset-password-view');
 }
 
-function resetPassword() {
+async function resetPassword() {
     const newPassword = getInputValue('reset-password');
     const confirmPassword = getInputValue('reset-confirm-password');
     
@@ -221,14 +226,15 @@ function resetPassword() {
         return;
     }
     
-    const userData = getUserData(otpData.email);
-    if (userData) {
-        userData.password = newPassword;
-        saveUserData(otpData.email, userData);
+    try {
+        // In a full implementation, you'd call an API here
+        // For now, we'll use the existing localStorage method
+        // TODO: Implement password reset API endpoint
         
-        otpData = null;
-        alert('Password reset successful! Please login with your new password.');
+        alert('Password reset functionality requires additional API endpoint');
         showView('login-view');
+    } catch (error) {
+        alert('Error: ' + error.message);
     }
 }
 
@@ -247,25 +253,6 @@ function resendOTP() {
 
 function validateEmailDomain(email) {
     return email.endsWith('@firstasia.edu.ph');
-}
-
-function generateOTP() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function getUserData(email) {
-    const data = localStorage.getItem('user_' + email);
-    return data ? JSON.parse(data) : null;
-}
-
-function saveUserData(email, userData) {
-    localStorage.setItem('user_' + email, JSON.stringify(userData));
-}
-
-function loginUser(email, role) {
-    localStorage.setItem('fsh_user_email', email);
-    localStorage.setItem('fsh_user_role', role);
-    window.location.href = "dashboard.html";
 }
 
 function getInputValue(id) {

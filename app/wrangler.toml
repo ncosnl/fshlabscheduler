@@ -1,0 +1,14 @@
+name = "fsh-lab-scheduler"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "."
+
+# D1 Database binding
+[[d1_databases]]
+binding = "fsh_lab_db"
+database_name = "fsh-lab-db"
+database_id = "ed193f11-1cae-4982-b623-40259ab41860"
+
+# Environment variables (add in Cloudflare dashboard for production)
+[vars]
+JWT_SECRET = "your-jwt-secret-here-change-in-production"
+GOOGLE_CLIENT_ID = "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com"

@@ -1,49 +1,34 @@
 // ============================================================================
-// GOOGLE-AUTH.JS - Google Sign-In Integration
+// GOOGLE-AUTH.JS - Google Sign-In Integration (API Version)
 // ============================================================================
 
 // ============================================================================
 // GOOGLE SIGN-IN HANDLER
 // ============================================================================
 
-function handleCredentialResponse(response) {
-    const responsePayload = decodeJwtResponse(response.credential);
+async function handleCredentialResponse(response) {
+    try {
+        // Use selected role or default to Teacher
+        if (!selectedRole) {
+            selectedRole = "Teacher";
+        }
 
-    console.log("ID: " + responsePayload.sub);
-    console.log("Email: " + responsePayload.email);
-
-    // Validate domain
-    if (responsePayload.hd !== 'firstasia.edu.ph') {
-        alert("Access Denied: Please sign in with your school email (@firstasia.edu.ph).");
-        return;
+        // Call API to verify and create/login user
+        const result = await window.AuthAPI.googleSignIn(response.credential, selectedRole);
+        
+        if (result.success) {
+            // Redirect to dashboard
+            window.location.href = "dashboard.html";
+        }
+    } catch (error) {
+        console.error('Google Sign-In error:', error);
+        
+        if (error.message.includes('domain') || error.message.includes('school email')) {
+            alert("Access Denied: Please sign in with your school email (@firstasia.edu.ph).");
+        } else {
+            alert("Google Sign-In failed: " + error.message);
+        }
     }
-
-    // Use selected role or default to Teacher
-    if (!selectedRole) {
-        selectedRole = "Teacher";
-    }
-
-    // Save to localStorage and redirect
-    localStorage.setItem('fsh_user_email', responsePayload.email);
-    localStorage.setItem('fsh_user_role', selectedRole);
-    window.location.href = "dashboard.html";
-}
-
-// ============================================================================
-// JWT DECODER
-// ============================================================================
-
-function decodeJwtResponse(token) {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-        window.atob(base64)
-            .split('')
-            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
-    );
-
-    return JSON.parse(jsonPayload);
 }
 
 // ============================================================================
