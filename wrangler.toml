@@ -1,6 +1,9 @@
 name = "fsh-lab-scheduler"
 compatibility_date = "2024-01-01"
 
+# THIS IS IMPORTANT - tells Cloudflare where your files are
+pages_build_output_dir = "app"
+
 # D1 Database binding
 [[d1_databases]]
 binding = "DB"
