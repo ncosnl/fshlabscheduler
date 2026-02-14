@@ -1,5 +1,5 @@
 // ============================================================================
-// AUTH.JS - Authentication Logic (Updated to use API)
+// AUTH.JS - Authentication Logic
 // ============================================================================
 
 // Global variables
@@ -27,7 +27,7 @@ function handleSelection(clickedBtn) {
 // LOGIN LOGIC
 // ============================================================================
 
-async function handleLogin() {
+function handleLogin() {
     const email = getInputValue('login-email').toLowerCase();
     const password = getInputValue('login-password');
 
@@ -39,17 +39,22 @@ async function handleLogin() {
         return;
     }
 
-    try {
-        // Call API
-        const result = await window.api.login(email, password);
-        
-        if (result.success) {
-            loginUser(result.user.email, result.user.role);
-        }
-    } catch (error) {
-        showError('login-password');
-        alert(error.message);
+    const storedUser = getUserData(email);
+    
+    if (!storedUser) {
+        showError('login-email');
+        alert('No account found. Please sign up first.');
+        return;
     }
+    
+    if (storedUser.password !== password) {
+        showError('login-password');
+        alert('Incorrect password');
+        return;
+    }
+    
+    selectedRole = storedUser.role;
+    loginUser(email, selectedRole);
 }
 
 // ============================================================================
@@ -58,11 +63,18 @@ async function handleLogin() {
 
 function confirmEmail() {
     const email = getInputValue('signup-email').toLowerCase();
+    const emailInput = document.getElementById('signup-email');
     
     clearError('signup-email');
     
     if (!validateEmailDomain(email)) {
         showError('signup-email', "Access Denied: Use school email");
+        return;
+    }
+    
+    if (getUserData(email)) {
+        showError('signup-email');
+        alert('An account with this email already exists. Please sign in.');
         return;
     }
     
@@ -78,7 +90,7 @@ function confirmEmail() {
     showView('signup-password-view');
 }
 
-async function handleSignup() {
+function handleSignup() {
     const password = getInputValue('signup-password');
     const confirmPassword = getInputValue('signup-confirm-password');
     
@@ -97,20 +109,19 @@ async function handleSignup() {
         return;
     }
     
-    try {
-        // Call API
-        const result = await window.api.signup(confirmedEmail, password, selectedRole);
-        
-        if (result.success) {
-            loginUser(result.user.email, result.user.role);
-        }
-    } catch (error) {
-        alert(error.message);
-    }
+    const userData = {
+        email: confirmedEmail,
+        password: password,
+        role: selectedRole,
+        createdAt: new Date().toISOString()
+    };
+    
+    saveUserData(confirmedEmail, userData);
+    loginUser(confirmedEmail, selectedRole);
 }
 
 // ============================================================================
-// FORGOT PASSWORD LOGIC (Currently mock - would need email service)
+// FORGOT PASSWORD LOGIC
 // ============================================================================
 
 function sendOTP() {
@@ -123,16 +134,22 @@ function sendOTP() {
         return;
     }
     
-    // For now, keep the OTP system as-is (localStorage based)
-    // In production, this would send an actual email via API
+    const storedUser = getUserData(email);
+    if (!storedUser) {
+        showError('forgot-email');
+        alert('No account found with this email.');
+        return;
+    }
+    
     const otp = generateOTP();
     otpData = {
         email: email,
         code: otp,
         timestamp: Date.now(),
-        expiresIn: 5 * 60 * 1000
+        expiresIn: 5 * 60 * 1000 // 5 minutes
     };
     
+    // In production, this would send an actual email
     console.log(`OTP for ${email}: ${otp}`);
     alert(`Your verification code is: ${otp}\n\n(In production, this would be sent to your email)`);
     
@@ -179,7 +196,7 @@ function verifyOTP() {
     showView('reset-password-view');
 }
 
-async function resetPassword() {
+function resetPassword() {
     const newPassword = getInputValue('reset-password');
     const confirmPassword = getInputValue('reset-confirm-password');
     
@@ -204,15 +221,14 @@ async function resetPassword() {
         return;
     }
     
-    try {
-        // In a real implementation, we'd need a password reset token from the backend
-        // For now, keeping it simple
-        alert('Password reset functionality requires email service integration.');
-        alert('Please contact an administrator to reset your password.');
+    const userData = getUserData(otpData.email);
+    if (userData) {
+        userData.password = newPassword;
+        saveUserData(otpData.email, userData);
+        
         otpData = null;
+        alert('Password reset successful! Please login with your new password.');
         showView('login-view');
-    } catch (error) {
-        alert('Password reset failed: ' + error.message);
     }
 }
 
@@ -237,10 +253,19 @@ function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function getUserData(email) {
+    const data = localStorage.getItem('user_' + email);
+    return data ? JSON.parse(data) : null;
+}
+
+function saveUserData(email, userData) {
+    localStorage.setItem('user_' + email, JSON.stringify(userData));
+}
+
 function loginUser(email, role) {
     localStorage.setItem('fsh_user_email', email);
     localStorage.setItem('fsh_user_role', role);
-    window.location.href = "/dashboard.html";
+    window.location.href = "dashboard.html";
 }
 
 function getInputValue(id) {
@@ -284,15 +309,18 @@ function clearError(inputId) {
 // ============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Hide all password toggle icons on page load
     const allPasswordToggles = document.querySelectorAll('.password-toggle');
     allPasswordToggles.forEach(icon => {
         icon.style.display = 'none';
     });
     
+    // Setup input listeners
     setupInputListeners();
 });
 
 function setupInputListeners() {
+    // Login email
     const loginEmail = document.getElementById('login-email');
     if (loginEmail) {
         loginEmail.addEventListener('input', () => clearError('login-email'));
@@ -301,6 +329,7 @@ function setupInputListeners() {
         });
     }
     
+    // Login password
     const loginPassword = document.getElementById('login-password');
     if (loginPassword) {
         loginPassword.addEventListener('input', () => {
@@ -312,6 +341,7 @@ function setupInputListeners() {
         });
     }
     
+    // Signup email
     const signupEmail = document.getElementById('signup-email');
     if (signupEmail) {
         signupEmail.addEventListener('input', () => clearError('signup-email'));
@@ -320,6 +350,7 @@ function setupInputListeners() {
         });
     }
     
+    // Signup passwords
     const signupPassword = document.getElementById('signup-password');
     const signupConfirmPassword = document.getElementById('signup-confirm-password');
     
@@ -340,6 +371,7 @@ function setupInputListeners() {
         });
     }
     
+    // Forgot password email
     const forgotEmail = document.getElementById('forgot-email');
     if (forgotEmail) {
         forgotEmail.addEventListener('input', () => clearError('forgot-email'));
@@ -348,6 +380,7 @@ function setupInputListeners() {
         });
     }
     
+    // OTP code
     const otpCode = document.getElementById('otp-code');
     if (otpCode) {
         otpCode.addEventListener('input', () => clearError('otp-code'));
@@ -356,11 +389,12 @@ function setupInputListeners() {
         });
     }
     
-    const resetPasswordField = document.getElementById('reset-password');
+    // Reset password fields
+    const resetPassword = document.getElementById('reset-password');
     const resetConfirmPassword = document.getElementById('reset-confirm-password');
     
-    if (resetPasswordField) {
-        resetPasswordField.addEventListener('input', () => {
+    if (resetPassword) {
+        resetPassword.addEventListener('input', () => {
             clearError('reset-password');
             updatePasswordIconVisibility('reset-password');
         });

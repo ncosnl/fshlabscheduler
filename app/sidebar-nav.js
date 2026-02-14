@@ -175,7 +175,7 @@ window.toggleTheme = toggleTheme;
 
 function initializeMailButton() {
     // Only show mail button on dashboard page
-    if (!window.location.pathname.includes('dashboard')) {
+    if (!window.location.pathname.includes('dashboard.html')) {
         return;
     }
     
@@ -187,7 +187,7 @@ function initializeMailButton() {
     mailButton.setAttribute('title', 'Notifications');
     
     mailButton.innerHTML = `
-        <img src="public/Mail.png" alt="Mail">
+        <img src="../public/Mail.png" alt="Mail">
         <span class="notification-badge" id="notification-badge">0</span>
     `;
     

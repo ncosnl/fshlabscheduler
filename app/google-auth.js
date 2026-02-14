@@ -26,7 +26,7 @@ function handleCredentialResponse(response) {
     // Save to localStorage and redirect
     localStorage.setItem('fsh_user_email', responsePayload.email);
     localStorage.setItem('fsh_user_role', selectedRole);
-    window.location.href = "/dashboard.html";
+    window.location.href = "dashboard.html";
 }
 
 // ============================================================================
