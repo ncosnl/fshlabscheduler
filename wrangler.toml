@@ -1,15 +1,8 @@
 name = "fsh-lab-scheduler"
 compatibility_date = "2024-01-01"
 
-# Pages configuration
-pages_build_output_dir = "./app"
-
 # D1 Database binding
 [[d1_databases]]
 binding = "DB"
 database_name = "fsh-lab-scheduler-db"
-database_id = "24debb30-486b-4c3b-bf72-8ef188e8b119"  # You'll get this when you create the database
-
-# Environment variables (optional)
-[vars]
-ENVIRONMENT = "production"
+database_id = "24debb30-486b-4c3b-bf72-8ef188e8b119"
