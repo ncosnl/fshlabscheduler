@@ -427,8 +427,33 @@ function jsonResponse(data, status = 200, headers = {}) {
 }
 
 // ============================================================================
-// EXPORT HANDLER (Cloudflare Pages Functions format)
+// EXPORT HANDLERS (Cloudflare Pages Functions format)
 // ============================================================================
 
-// This is the correct export format for Cloudflare Pages Functions
-export const onRequest = handleRequest;
+// Export for all HTTP methods
+export async function onRequestGet(context) {
+    return handleRequest(context);
+}
+
+export async function onRequestPost(context) {
+    return handleRequest(context);
+}
+
+export async function onRequestPut(context) {
+    return handleRequest(context);
+}
+
+export async function onRequestDelete(context) {
+    return handleRequest(context);
+}
+
+export async function onRequestOptions(context) {
+    return new Response(null, {
+        status: 204,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+        }
+    });
+}
