@@ -1,13 +1,19 @@
 // ============================================================================
 // MAIN API ROUTER - Handles all backend requests
 // File: functions/api/[[route]].js
-// Fixed version without ES modules
+// Cloudflare Pages Functions with catch-all routing
 // ============================================================================
 
-async function handleRequest(context) {
+export async function onRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
-    const path = url.pathname.replace('/api/', '').replace(/^\//, '');
+    
+    // Remove /api/ from the path
+    const pathParts = url.pathname.split('/').filter(p => p);
+    // pathParts = ['api', 'auth', 'login'] -> we want ['auth', 'login']
+    const apiIndex = pathParts.indexOf('api');
+    const path = apiIndex >= 0 ? pathParts.slice(apiIndex + 1).join('/') : pathParts.join('/');
+    
     const method = request.method;
 
     // CORS headers for all responses
@@ -26,24 +32,23 @@ async function handleRequest(context) {
     }
 
     try {
-        // Log incoming request for debugging
         console.log(`${method} /api/${path}`);
 
         // Route to appropriate handler
-        if (path.startsWith('auth/')) {
-            return await handleAuth(request, env, path, corsHeaders);
-        } else if (path.startsWith('reservations')) {
-            return await handleReservations(request, env, path, corsHeaders);
-        } else if (path.startsWith('notifications')) {
-            return await handleNotifications(request, env, path, corsHeaders);
+        if (path.startsWith('auth/') || path === 'auth/login' || path === 'auth/signup' || path === 'auth/change-password') {
+            return await handleAuth(request, env, path, method, corsHeaders);
+        } else if (path.startsWith('reservations') || path === 'reservations') {
+            return await handleReservations(request, env, path, method, corsHeaders);
+        } else if (path.startsWith('notifications') || path === 'notifications') {
+            return await handleNotifications(request, env, path, method, corsHeaders);
         } else {
-            return jsonResponse({ error: 'Not found', path }, 404, corsHeaders);
+            return jsonResponse({ error: 'Not found', path, method }, 404, corsHeaders);
         }
     } catch (error) {
         console.error('API Error:', error);
         return jsonResponse({ 
             error: error.message,
-            stack: error.stack 
+            details: error.toString()
         }, 500, corsHeaders);
     }
 }
@@ -52,16 +57,13 @@ async function handleRequest(context) {
 // AUTHENTICATION HANDLERS
 // ============================================================================
 
-async function handleAuth(request, env, path, corsHeaders) {
-    const method = request.method;
-
+async function handleAuth(request, env, path, method, corsHeaders) {
     try {
         // POST /api/auth/signup
-        if (path === 'auth/signup' && method === 'POST') {
+        if ((path === 'auth/signup' || path.endsWith('/signup')) && method === 'POST') {
             const body = await request.json();
             const { email, password, role } = body;
 
-            // Validate input
             if (!email || !password || !role) {
                 return jsonResponse({ error: 'Missing required fields' }, 400, corsHeaders);
             }
@@ -70,15 +72,13 @@ async function handleAuth(request, env, path, corsHeaders) {
                 return jsonResponse({ error: 'Use school email' }, 400, corsHeaders);
             }
 
-            // Check if DB exists
             if (!env.DB) {
                 return jsonResponse({ 
                     error: 'Database not configured',
-                    hint: 'Please bind D1 database in Cloudflare Pages settings' 
+                    hint: 'Bind D1 database in Settings > Functions > D1 bindings' 
                 }, 500, corsHeaders);
             }
 
-            // Check if user exists
             const existing = await env.DB.prepare(
                 'SELECT id FROM users WHERE email = ?'
             ).bind(email).first();
@@ -87,8 +87,7 @@ async function handleAuth(request, env, path, corsHeaders) {
                 return jsonResponse({ error: 'Email already registered' }, 400, corsHeaders);
             }
 
-            // Create user
-            const result = await env.DB.prepare(
+            await env.DB.prepare(
                 'INSERT INTO users (email, password, role) VALUES (?, ?, ?)'
             ).bind(email, password, role).run();
 
@@ -99,15 +98,14 @@ async function handleAuth(request, env, path, corsHeaders) {
         }
 
         // POST /api/auth/login
-        if (path === 'auth/login' && method === 'POST') {
+        if ((path === 'auth/login' || path.endsWith('/login')) && method === 'POST') {
             const body = await request.json();
             const { email, password } = body;
 
-            // Check if DB exists
             if (!env.DB) {
                 return jsonResponse({ 
                     error: 'Database not configured',
-                    hint: 'Please bind D1 database in Cloudflare Pages settings' 
+                    hint: 'Bind D1 database in Settings > Functions > D1 bindings' 
                 }, 500, corsHeaders);
             }
 
@@ -126,14 +124,12 @@ async function handleAuth(request, env, path, corsHeaders) {
         }
 
         // POST /api/auth/change-password
-        if (path === 'auth/change-password' && method === 'POST') {
+        if ((path === 'auth/change-password' || path.endsWith('/change-password')) && method === 'POST') {
             const body = await request.json();
             const { email, currentPassword, newPassword } = body;
 
             if (!env.DB) {
-                return jsonResponse({ 
-                    error: 'Database not configured' 
-                }, 500, corsHeaders);
+                return jsonResponse({ error: 'Database not configured' }, 500, corsHeaders);
             }
 
             const user = await env.DB.prepare(
@@ -151,7 +147,13 @@ async function handleAuth(request, env, path, corsHeaders) {
             return jsonResponse({ success: true }, 200, corsHeaders);
         }
 
-        return jsonResponse({ error: 'Not found' }, 404, corsHeaders);
+        return jsonResponse({ 
+            error: 'Endpoint not found',
+            path,
+            method,
+            hint: 'Check if the endpoint and method are correct'
+        }, 404, corsHeaders);
+        
     } catch (error) {
         console.error('Auth error:', error);
         return jsonResponse({ 
@@ -165,15 +167,12 @@ async function handleAuth(request, env, path, corsHeaders) {
 // RESERVATION HANDLERS
 // ============================================================================
 
-async function handleReservations(request, env, path, corsHeaders) {
-    const method = request.method;
+async function handleReservations(request, env, path, method, corsHeaders) {
     const url = new URL(request.url);
 
     try {
         if (!env.DB) {
-            return jsonResponse({ 
-                error: 'Database not configured' 
-            }, 500, corsHeaders);
+            return jsonResponse({ error: 'Database not configured' }, 500, corsHeaders);
         }
 
         // GET /api/reservations
@@ -215,18 +214,10 @@ async function handleReservations(request, env, path, corsHeaders) {
         if (path === 'reservations' && method === 'POST') {
             const data = await request.json();
             const {
-                lab_name,
-                date,
-                time_slot,
-                teacher_email,
-                teacher_name,
-                subject,
-                grade_level,
-                num_students,
-                purpose
+                lab_name, date, time_slot, teacher_email, teacher_name,
+                subject, grade_level, num_students, purpose
             } = data;
 
-            // Check for conflicts
             const conflict = await env.DB.prepare(
                 'SELECT id FROM reservations WHERE lab_name = ? AND date = ? AND time_slot = ? AND status != ?'
             ).bind(lab_name, date, time_slot, 'rejected').first();
@@ -235,7 +226,6 @@ async function handleReservations(request, env, path, corsHeaders) {
                 return jsonResponse({ error: 'Time slot already reserved' }, 400, corsHeaders);
             }
 
-            // Create reservation
             const result = await env.DB.prepare(
                 `INSERT INTO reservations 
                 (lab_name, date, time_slot, teacher_email, teacher_name, subject, grade_level, num_students, purpose, status) 
@@ -247,7 +237,6 @@ async function handleReservations(request, env, path, corsHeaders) {
 
             const reservationId = result.meta.last_row_id;
 
-            // Create notifications for admins
             const admins = await env.DB.prepare(
                 "SELECT email FROM users WHERE role = 'Admin'"
             ).all();
@@ -258,28 +247,20 @@ async function handleReservations(request, env, path, corsHeaders) {
                     (type, reservation_id, from_email, to_email, subject, message, lab, date, time_slot, status) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
                 ).bind(
-                    'request',
-                    reservationId,
-                    teacher_email,
-                    admin.email,
+                    'request', reservationId, teacher_email, admin.email,
                     `New Lab Request: ${lab_name}`,
                     `${teacher_name} has requested ${lab_name} for ${subject} class.`,
-                    lab_name,
-                    date,
-                    time_slot,
-                    'pending'
+                    lab_name, date, time_slot, 'pending'
                 ).run();
             }
 
-            return jsonResponse({
-                success: true,
-                reservation_id: reservationId
-            }, 201, corsHeaders);
+            return jsonResponse({ success: true, reservation_id: reservationId }, 201, corsHeaders);
         }
 
         // PUT /api/reservations/:id
-        if (path.match(/^reservations\/\d+$/) && method === 'PUT') {
-            const id = path.split('/')[1];
+        const updateMatch = path.match(/^reservations\/(\d+)$/);
+        if (updateMatch && method === 'PUT') {
+            const id = updateMatch[1];
             const body = await request.json();
             const { status, admin_email } = body;
 
@@ -287,7 +268,6 @@ async function handleReservations(request, env, path, corsHeaders) {
                 return jsonResponse({ error: 'Invalid status' }, 400, corsHeaders);
             }
 
-            // Get reservation details
             const reservation = await env.DB.prepare(
                 'SELECT * FROM reservations WHERE id = ?'
             ).bind(id).first();
@@ -296,12 +276,10 @@ async function handleReservations(request, env, path, corsHeaders) {
                 return jsonResponse({ error: 'Reservation not found' }, 404, corsHeaders);
             }
 
-            // Update reservation
             await env.DB.prepare(
                 'UPDATE reservations SET status = ? WHERE id = ?'
             ).bind(status, id).run();
 
-            // Notify teacher
             const message = status === 'approved'
                 ? `Your reservation for ${reservation.lab_name} on ${reservation.date} (${reservation.time_slot}) has been approved!`
                 : `Your reservation for ${reservation.lab_name} on ${reservation.date} (${reservation.time_slot}) was not approved.`;
@@ -311,24 +289,18 @@ async function handleReservations(request, env, path, corsHeaders) {
                 (type, reservation_id, from_email, to_email, subject, message, lab, date, time_slot, status) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
             ).bind(
-                'approval',
-                id,
-                admin_email || 'admin',
-                reservation.teacher_email,
+                'approval', id, admin_email || 'admin', reservation.teacher_email,
                 status === 'approved' ? 'Reservation Approved' : 'Reservation Not Approved',
-                message,
-                reservation.lab_name,
-                reservation.date,
-                reservation.time_slot,
-                status
+                message, reservation.lab_name, reservation.date, reservation.time_slot, status
             ).run();
 
             return jsonResponse({ success: true }, 200, corsHeaders);
         }
 
         // DELETE /api/reservations/:id
-        if (path.match(/^reservations\/\d+$/) && method === 'DELETE') {
-            const id = path.split('/')[1];
+        const deleteMatch = path.match(/^reservations\/(\d+)$/);
+        if (deleteMatch && method === 'DELETE') {
+            const id = deleteMatch[1];
 
             await env.DB.prepare('DELETE FROM reservations WHERE id = ?').bind(id).run();
             await env.DB.prepare('DELETE FROM notifications WHERE reservation_id = ?').bind(id).run();
@@ -337,6 +309,7 @@ async function handleReservations(request, env, path, corsHeaders) {
         }
 
         return jsonResponse({ error: 'Not found' }, 404, corsHeaders);
+        
     } catch (error) {
         console.error('Reservation error:', error);
         return jsonResponse({ 
@@ -350,15 +323,12 @@ async function handleReservations(request, env, path, corsHeaders) {
 // NOTIFICATION HANDLERS
 // ============================================================================
 
-async function handleNotifications(request, env, path, corsHeaders) {
-    const method = request.method;
+async function handleNotifications(request, env, path, method, corsHeaders) {
     const url = new URL(request.url);
 
     try {
         if (!env.DB) {
-            return jsonResponse({ 
-                error: 'Database not configured' 
-            }, 500, corsHeaders);
+            return jsonResponse({ error: 'Database not configured' }, 500, corsHeaders);
         }
 
         // GET /api/notifications
@@ -377,8 +347,9 @@ async function handleNotifications(request, env, path, corsHeaders) {
         }
 
         // PUT /api/notifications/:id/read
-        if (path.match(/^notifications\/\d+\/read$/) && method === 'PUT') {
-            const id = path.split('/')[1];
+        const readMatch = path.match(/^notifications\/(\d+)\/read$/);
+        if (readMatch && method === 'PUT') {
+            const id = readMatch[1];
 
             await env.DB.prepare(
                 'UPDATE notifications SET read = 1 WHERE id = ?'
@@ -403,6 +374,7 @@ async function handleNotifications(request, env, path, corsHeaders) {
         }
 
         return jsonResponse({ error: 'Not found' }, 404, corsHeaders);
+        
     } catch (error) {
         console.error('Notification error:', error);
         return jsonResponse({ 
@@ -422,38 +394,6 @@ function jsonResponse(data, status = 200, headers = {}) {
         headers: {
             'Content-Type': 'application/json',
             ...headers
-        }
-    });
-}
-
-// ============================================================================
-// EXPORT HANDLERS (Cloudflare Pages Functions format)
-// ============================================================================
-
-// Export for all HTTP methods
-export async function onRequestGet(context) {
-    return handleRequest(context);
-}
-
-export async function onRequestPost(context) {
-    return handleRequest(context);
-}
-
-export async function onRequestPut(context) {
-    return handleRequest(context);
-}
-
-export async function onRequestDelete(context) {
-    return handleRequest(context);
-}
-
-export async function onRequestOptions(context) {
-    return new Response(null, {
-        status: 204,
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
         }
     });
 }
