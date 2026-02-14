@@ -1,9 +1,10 @@
 // ============================================================================
 // MAIN API ROUTER - Handles all backend requests
 // File: functions/api/[[route]].js
+// Fixed version without ES modules
 // ============================================================================
 
-export async function onRequest(context) {
+async function handleRequest(context) {
     const { request, env } = context;
     const url = new URL(request.url);
     const path = url.pathname.replace('/api/', '').replace(/^\//, '');
@@ -424,3 +425,10 @@ function jsonResponse(data, status = 200, headers = {}) {
         }
     });
 }
+
+// ============================================================================
+// EXPORT HANDLER (Cloudflare Pages Functions format)
+// ============================================================================
+
+// This is the correct export format for Cloudflare Pages Functions
+export const onRequest = handleRequest;
