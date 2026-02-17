@@ -1,0 +1,1373 @@
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for Firefox, IE and Edge */
+html, body {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* ============================================================================
+   DARK MODE CSS VARIABLES
+   ============================================================================ */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #081316;
+    --secondary-text: #707475;
+    --nav-bg: #ffffff;
+    --card-bg: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #081316;
+    --button-bg: #081316;
+    --button-text: #ffffff;
+    --hover-bg: #f0f0f0;
+    --shadow: rgba(0, 0, 0, 0.05);
+    --shadow-hover: rgba(0, 0, 0, 0.12);
+    --border-color: #e0e0e0;
+}
+
+[data-theme="dark"] {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --secondary-text: #b0b0b0;
+    --nav-bg: #2a2a2a;
+    --card-bg: #2a2a2a;
+    --input-bg: #333333;
+    --input-border: #555555;
+    --button-bg: #ffffff;
+    --button-text: #081316;
+    --hover-bg: #3a3a3a;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --shadow-hover: rgba(0, 0, 0, 0.5);
+    --border-color: #444444;
+}
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "IBM Plex Sans", sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ============================================================================
+   NAVIGATION BAR
+   ============================================================================ */
+
+nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    align-items: center;
+    gap: 10px;
+    display: flex;
+    padding: 30px 3%;
+}
+
+nav img[src*="fsh_logo"] {
+    width: 50px;
+    height: 50px;
+    content: url('../public/fsh_logo_colored.png');
+}
+
+/* ============================================================================
+   MAIN CONTAINER - SPLIT SCREEN LAYOUT
+   ============================================================================ */
+
+.main-container {
+    display: flex; 
+    flex-direction: row; 
+    width: 100%;
+    min-height: 100vh;
+    align-items: center;
+}
+
+/* ============================================================================
+   LEFT SECTION - CONTENT AREA
+   ============================================================================ */
+
+.content {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 60px;
+    min-height: 100vh;
+}
+
+.content h1 {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    margin-bottom: 15px;
+    line-height: 1.2;
+}
+
+.content h2 {
+    color: var(--secondary-text);
+    font-weight: 400;
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    margin-bottom: 40px;
+}
+
+.content p{
+    font-size: clamp(0.875rem, 1.5vw, 0.9rem);
+    color: var(--secondary-text);
+    margin-bottom: 10px;
+}
+
+/* ============================================================================
+   RIGHT SECTION - IMAGE CONTAINER
+   ============================================================================ */
+
+.image-container {
+    flex: 1; 
+    height: 100vh;
+    padding: 40px; 
+}
+
+.image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; 
+    border-radius: 30px; 
+}
+
+/* ============================================================================
+   ROLE SELECTION VIEW
+   ============================================================================ */
+
+#selection-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 20px;
+}
+
+/* ============================================================================
+   TOGGLE BUTTONS
+   ============================================================================ */
+
+.toggle {
+    display: inline-flex;
+    background: #9999; 
+    border-radius: 30px;
+    padding: 5px;
+    margin-top: 10px;
+    isolation: isolate;
+}
+
+.toggle button {
+    min-width: 100px;
+    padding: 10px 25px;
+    font-size: clamp(13px, 1.5vw, 14px);
+    font-weight: 300;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 25px;
+    color: var(--secondary-text);
+    transition: all 0.3s ease; 
+}
+
+.toggle button:hover {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    font-weight: 300;
+    transform: translateY(-1px);
+}
+
+.toggle button:active {
+    transform: scale(0.98);
+}
+
+/* ============================================================================
+   VIEW CONTAINERS
+   ============================================================================ */
+
+#login-view,
+#signup-view,
+#signup-password-view,
+#forgot-password-view,
+#otp-view,
+#reset-password-view {
+    display: none; 
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 320px;
+}
+
+/* ============================================================================
+   PASSWORD FIELD WITH TOGGLE ICON
+   ============================================================================ */
+
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.password-container .login-input {
+    width: 100%;
+    padding-right: 45px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-top: -6px;
+    cursor: pointer;
+    color: var(--secondary-text);
+    font-size: 16px;
+    transition: color 0.3s ease;
+    user-select: none;
+    display: none;
+}
+
+.password-toggle:hover {
+    color: var(--text-color);
+}
+
+/* ============================================================================
+   FORGOT PASSWORD LINK
+   ============================================================================ */
+
+.forgot-password-link {
+    align-self: flex-end;
+    font-size: 14px;
+    color: var(--text-color);
+    font-weight: 500;
+    text-decoration: none;
+    margin-bottom: 15px;
+    margin-top: -5px;
+    transition: color 0.3s ease;
+}
+
+.forgot-password-link:hover {
+    color: var(--secondary-text);
+}
+
+/* ============================================================================
+   HEADINGS AND TEXT
+   ============================================================================ */
+
+.login-subtext {
+    text-align: center; 
+    line-height: 1.2;
+    font-size: clamp(1rem, 2vw, 1.1rem);
+    font-weight: 400;
+    margin-bottom: 10px;
+    margin-top: -5px;
+    color: var(--secondary-text);
+}
+
+/* ============================================================================
+   BUTTONS
+   ============================================================================ */
+
+.google-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid transparent; 
+    border-radius: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 5px;
+    transition: all 0.3s ease;
+}
+
+.google-btn:hover {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--text-color); 
+    transform: translateY(-1px);
+}
+
+.google-btn img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.enter-btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid transparent; 
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.enter-btn:hover {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--text-color); 
+    transform: translateY(-1px);
+}
+
+.back-btn {
+    background: var(--button-bg);
+    border: 1px solid transparent; 
+    cursor: pointer;
+    padding: 10px 20px;
+    border-radius: 50px; 
+    color: var(--button-text);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    border: 1px solid var(--text-color);
+    transform: translateY(-1px);
+}
+
+/* ============================================================================
+   DARK MODE OVERRIDES FOR LOGIN/SIGNUP LINKS
+   ============================================================================ */
+
+/* Sign up / Sign in links in dark mode */
+[data-theme="dark"] .content p a {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .content p a:hover {
+    opacity: 0.8;
+}
+
+/* Dark mode glow for index page nav logo */
+[data-theme="dark"] nav img[src*="fsh_logo"] {
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+}
+
+/* Google Sign-In Button styles are handled in google-auth.css */
+
+/* ============================================================================
+   BACK NAVIGATION
+   ============================================================================ */
+
+.back-navigation {
+    margin-top: 25px; 
+    width: 100%;
+    display: flex;
+    justify-content: center; 
+}
+
+/* ============================================================================
+   DIVIDER
+   ============================================================================ */
+
+.divider {
+    margin: 10px 0;
+    color: var(--secondary-text); 
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--secondary-text);
+    margin: 0 10px;
+}
+
+/* ============================================================================
+   INPUT FIELDS
+   ============================================================================ */
+
+.login-input {
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid var(--input-border);
+    border-radius: 50px;
+    margin-bottom: 12px;
+    outline: none;
+    font-size: 14px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+.input-error {
+    border: 2px solid #ff4d4d !important;
+    background-color: #fff0f0;
+    animation: shake 0.4s ease-in-out;
+}
+
+/* ============================================================================
+   DASHBOARD CONTAINER
+   ============================================================================ */
+
+.dashboard-container {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    background-color: var(--bg-color);
+    padding-top: 110px;
+}
+
+/* ============================================================================
+   DASHBOARD NAVIGATION
+   ============================================================================ */
+
+.dash-nav {
+    background-color: var(--nav-bg); 
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center; 
+    padding: 30px 5%;
+    box-shadow: 0 2px 10px var(--shadow); 
+}
+
+.dash-nav nav {
+    position: static;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+}
+
+.dash-nav img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+#user-display {
+    font-size: clamp(14px, 2vw, 18px);
+    font-weight: 500;
+}
+
+/* ============================================================================
+   MAIN CONTENT AREA
+   ============================================================================ */
+
+.main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 5%;
+}
+
+/* Add extra left padding on desktop to account for hamburger menu */
+@media (min-width: 769px) {
+    .main-content {
+        padding-left: calc(60px + 44px + 20px); /* hamburger position + width + gap */
+        padding-right: calc(60px + 50px + 20px); /* mail button position + width + gap */
+    }
+}
+
+.main-content header {
+    margin-bottom: 30px;
+}
+
+.main-content h1 {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-weight: 700;
+    color: var(--text-color);
+    padding-left: 0;
+    transition: padding-left 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .main-content h1 {
+        padding-left: 0; /* Remove padding on mobile */
+    }
+}
+
+/* ============================================================================
+   LAB GRID
+   ============================================================================ */
+
+.lab-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.lab-card {
+    border-radius: 30px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: var(--card-bg);
+}
+
+.lab-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 20px var(--shadow-hover);
+}
+
+.lab-image {
+    height: 200px;
+    width: 100%;
+    background-color: var(--hover-bg);
+    display: block;
+    object-fit: cover;
+}
+
+.lab-info {
+    padding: 25px;
+}
+
+.lab-info span {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--secondary-text);
+}
+
+.lab-info h3 {
+    font-size: clamp(1.1rem, 2vw, 1.25rem);
+    margin-top: 8px;
+    color: var(--text-color);
+}
+
+/* ============================================================================
+   LABORATORY PAGE STYLES
+   ============================================================================ */
+
+/* ============================================================================
+   LABORATORY HEADER WITH RIGHT-ALIGNED BUTTON
+   ============================================================================ */
+
+.lab-header {
+    background: linear-gradient(135deg, #081316 0%, #2a3a3f 100%);
+    color: white;
+    padding: 40px 5%;
+    margin-bottom: 40px;
+}
+
+/* Add extra left padding on desktop to account for hamburger menu */
+@media (min-width: 769px) {
+    .lab-header {
+        padding-left: calc(60px + 44px + 20px); /* hamburger position + width + gap */
+    }
+}
+
+.lab-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.lab-header-left {
+    flex: 1;
+}
+
+.lab-header-left h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    margin-bottom: 10px;
+    color: white;
+}
+
+.lab-header-left p {
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+}
+
+.lab-header-right {
+    flex-shrink: 0;
+}
+
+.lab-header-right .back-btn {
+    background: white;
+    color: #081316;
+    border: 2px solid white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.lab-header-right .back-btn:hover {
+    background: transparent;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.lab-header-right .back-btn i {
+    font-size: 14px;
+}
+
+.calendar-container {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 20px var(--shadow);
+    margin-bottom: 30px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.calendar-header h2 {
+    font-size: clamp(1.25rem, 3vw, 1.5rem);
+    color: var(--text-color);
+}
+
+.calendar-controls {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 5px;
+    background: var(--hover-bg);
+    padding: 5px;
+    border-radius: 10px;
+}
+
+.view-btn {
+    background: transparent;
+    color: var(--text-color);
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.view-btn:hover {
+    background: var(--card-bg);
+}
+
+.view-btn.active {
+    background: var(--button-bg);
+    color: var(--button-text);
+}
+
+.view-btn i {
+    font-size: 16px;
+}
+
+.calendar-nav {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.calendar-nav button {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.calendar-nav button:hover {
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
+.calendar-nav span {
+    font-weight: 600;
+    min-width: 150px;
+    text-align: center;
+    font-size: clamp(14px, 2vw, 16px);
+    color: var(--text-color);
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.calendar-day-header {
+    text-align: center;
+    font-weight: 600;
+    padding: 10px;
+    color: var(--secondary-text);
+    font-size: clamp(12px, 1.5vw, 14px);
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    font-size: clamp(12px, 1.5vw, 14px);
+    border: 2px solid transparent;
+    color: var(--text-color);
+}
+
+.calendar-day:not(.empty):not(.past):hover {
+    background: var(--hover-bg);
+    transform: scale(1.05);
+}
+
+/* Allow past dates to be hoverable when they have a pointer cursor (admin view) */
+.calendar-day.past[style*="cursor: pointer"]:hover {
+    background: var(--hover-bg);
+    transform: scale(1.05);
+}
+
+.calendar-day.empty {
+    cursor: default;
+}
+
+.calendar-day.past {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.calendar-day.today {
+    border: 2px solid var(--text-color);
+    font-weight: bold;
+}
+
+.calendar-day.has-reservation {
+    background: #fff0f0;
+    color: #ff4d4d;
+    font-weight: 600;
+}
+
+.calendar-day.has-reservation::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    width: 4px;
+    height: 4px;
+    background: #ff4d4d;
+    border-radius: 50%;
+}
+
+.calendar-day.selected {
+    background: #081316;
+    color: white;
+}
+
+/* Daily View Styles */
+.calendar-day.daily-view {
+    aspect-ratio: auto;
+    min-height: 200px;
+    flex-direction: column;
+    padding: 20px;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+}
+
+.daily-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.daily-day-name {
+    font-size: clamp(14px, 2vw, 16px);
+    font-weight: 500;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.daily-day-number {
+    font-size: clamp(48px, 10vw, 72px);
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1;
+}
+
+.daily-month-year {
+    font-size: clamp(14px, 2vw, 16px);
+    color: var(--secondary-text);
+}
+
+.calendar-day.daily-view.selected {
+    border-color: #081316;
+    background: var(--card-bg);
+}
+
+.calendar-day.daily-view.selected .daily-day-number {
+    color: #081316;
+}
+
+[data-theme="dark"] .calendar-day.daily-view.selected {
+    border-color: #ffffff;
+}
+
+[data-theme="dark"] .calendar-day.daily-view.selected .daily-day-number {
+    color: #ffffff;
+}
+
+/* ============================================================================
+   TIME SLOT SELECTION
+   ============================================================================ */
+
+.time-slots-container {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 20px var(--shadow);
+    margin-bottom: 30px;
+}
+
+.time-slots-container h3 {
+    font-size: clamp(1.1rem, 2.5vw, 1.25rem);
+    margin-bottom: 20px;
+    color: var(--text-color);
+}
+
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+}
+
+.time-slot {
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: clamp(13px, 1.5vw, 14px);
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+.time-slot:hover:not(.disabled) {
+    border-color: var(--text-color);
+    transform: translateY(-2px);
+}
+
+.time-slot.selected {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border-color: var(--button-bg);
+}
+
+.time-slot.disabled {
+    background: var(--hover-bg);
+    color: var(--secondary-text);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* ============================================================================
+   RESERVATION FORM
+   ============================================================================ */
+
+.reservation-form {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.reservation-form h3 {
+    font-size: clamp(1.1rem, 2.5vw, 1.25rem);
+    margin-bottom: 20px;
+    color: var(--text-color);
+}
+
+#selected-info {
+    padding: 15px;
+    background: var(--hover-bg);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    color: var(--text-color);
+}
+
+#selected-info p {
+    color: var(--secondary-text);
+    margin: 0;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: clamp(13px, 1.5vw, 14px);
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--text-color);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.submit-reservation-btn {
+    width: 100%;
+    padding: 15px;
+    background: #081316;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-reservation-btn:hover {
+    background: #2a3a3f;
+    transform: translateY(-2px);
+}
+
+.submit-reservation-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================================================================
+   ADMIN PANEL
+   ============================================================================ */
+
+.admin-panel {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.admin-panel h3 {
+    font-size: clamp(1.1rem, 2.5vw, 1.25rem);
+    margin-bottom: 20px;
+    color: var(--text-color);
+}
+
+.reservations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.reservation-item {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid #081316;
+}
+
+[data-theme="dark"] .reservation-item {
+    background: #2a2a2a;
+    border-left-color: #ffffff;
+    border: 1px solid #444444;
+    border-left: 4px solid #ffffff;
+}
+
+.reservation-item.pending {
+    border-left-color: #ffa500;
+}
+
+.reservation-item.approved {
+    border-left-color: #4caf50;
+}
+
+.reservation-item.declined {
+    border-left-color: #ff4d4d;
+}
+
+[data-theme="dark"] .reservation-item.pending {
+    border-left-color: #ffa500;
+}
+
+[data-theme="dark"] .reservation-item.approved {
+    border-left-color: #4caf50;
+}
+
+[data-theme="dark"] .reservation-item.declined {
+    border-left-color: #ff4d4d;
+}
+
+.reservation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.reservation-info h4 {
+    font-size: clamp(1rem, 2vw, 1.1rem);
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+.reservation-info p {
+    font-size: clamp(13px, 1.5vw, 14px);
+    color: var(--secondary-text);
+    margin: 3px 0;
+}
+
+.reservation-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.reservation-status.pending {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+[data-theme="dark"] .reservation-status.pending {
+    background: rgba(245, 124, 0, 0.2);
+    color: #ffb74d;
+}
+
+.reservation-status.approved {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+[data-theme="dark"] .reservation-status.approved {
+    background: rgba(76, 175, 80, 0.2);
+    color: #81c784;
+}
+
+.reservation-status.declined {
+    background: #ffebee;
+    color: #c62828;
+}
+
+[data-theme="dark"] .reservation-status.declined {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef5350;
+}
+
+.reservation-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.approve-btn,
+.decline-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.approve-btn {
+    background: #4caf50;
+    color: white;
+}
+
+.approve-btn:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+}
+
+.decline-btn {
+    background: #ff4d4d;
+    color: white;
+}
+
+.decline-btn:hover {
+    background: #e04444;
+    transform: translateY(-2px);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--secondary-text);
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.3;
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+.fade-in {
+    animation: fadeIn 0.8s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media screen and (max-width: 1024px) {
+    .calendar-grid {
+        gap: 8px;
+    }
+    
+    .time-slots-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .main-container {
+        flex-direction: column-reverse;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    .image-container {
+        height: 30vh;
+        padding: 0;
+        width: 100%;
+    }
+
+    .image-container img {
+        border-radius: 0 0 30px 30px;
+    }
+
+    .main-content {
+        padding:15px 5% 40px 5%; 
+    } 
+
+    .content {
+        padding: 40px 20px;
+        justify-content: flex-start;
+        min-height: auto;
+    }
+
+    .lab-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+        gap: 20px;
+    }
+
+    nav {
+        position: absolute; 
+        width: 100%;
+        padding: 20px;
+        background: linear-gradient(to bottom, var(--nav-bg) 65%, rgba(255, 255, 255, 0) 100%);
+        padding-bottom: 60px; 
+    }
+    
+    [data-theme="dark"] nav {
+        background: linear-gradient(to bottom, var(--nav-bg) 65%, rgba(26, 26, 26, 0) 100%);
+    }
+
+    .dash-nav {
+        padding: 20px 5%;
+    }
+
+    .dashboard-container {
+        padding-top: 140px;
+    }
+
+    .calendar-container,
+    .time-slots-container,
+    .reservation-form,
+    .admin-panel {
+        padding: 20px;
+    }
+
+    .calendar-controls {
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+    }
+
+    .view-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .view-btn {
+        padding: 10px 15px;
+    }
+
+    .calendar-nav {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .view-btn i {
+        font-size: 14px;
+    }
+
+    .calendar-grid {
+        gap: 5px;
+    }
+
+    .calendar-day {
+        font-size: 12px;
+    }
+
+    .calendar-day.daily-view {
+        min-height: 150px;
+    }
+
+    .daily-day-number {
+        font-size: 48px !important;
+    }
+
+    .time-slots-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+    }
+
+    .lab-header {
+        padding: 30px 5%;
+    }
+
+    .lab-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .lab-header-left {
+        width: 100%;
+    }
+
+    .lab-header-right {
+        width: 100%;
+    }
+
+    .lab-header-right .back-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .reservation-header {
+        flex-direction: column;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .calendar-nav {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .calendar-nav span {
+        font-size: 14px;
+    }
+
+    .time-slots-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    #login-view,
+    #signup-view,
+    #signup-password-view,
+    #forgot-password-view,
+    #otp-view,
+    #reset-password-view {
+        max-width: 100%;
+        padding: 0 10px;
+    }
+}

@@ -1,0 +1,56 @@
+/* ============================================================================
+   GOOGLE-AUTH.CSS - Google Sign-In Button Styles
+   Controls the appearance of the Google Sign-In button in both light and dark mode.
+   The JS (google-auth.js) renders theme="filled_black" in light mode and
+   theme="outline" in dark mode, so the button itself is always correct.
+   This file handles the wrapper container styling only.
+   ============================================================================ */
+
+/* ============================================================================
+   BUTTON WRAPPER
+   ============================================================================ */
+
+#buttonDiv-login,
+#buttonDiv-signup {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 5px 0;
+    border-radius: 50px;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Round off the inner iframe Google injects */
+#buttonDiv-login > div,
+#buttonDiv-signup > div {
+    border-radius: 50px !important;
+    width: 100% !important;
+}
+
+#buttonDiv-login iframe,
+#buttonDiv-signup iframe {
+    border-radius: 50px !important;
+}
+
+/* ============================================================================
+   DARK MODE - outline (white) button rendered by JS
+   No background override needed — Google's outline button is already white.
+   Just add a subtle glow to help it stand out against the dark background.
+   ============================================================================ */
+
+[data-theme="dark"] #buttonDiv-login,
+[data-theme="dark"] #buttonDiv-signup {
+    filter: none;
+    background-color: transparent;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+                0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] #buttonDiv-login:hover,
+[data-theme="dark"] #buttonDiv-signup:hover {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25),
+                0 6px 20px rgba(0, 0, 0, 0.45);
+}
