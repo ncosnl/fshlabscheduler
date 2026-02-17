@@ -13,10 +13,11 @@
 #buttonDiv-login,
 #buttonDiv-signup {
     width: 100%;
+    max-width: 320px;  
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 5px 0;
+    margin: 5px auto;  
     border-radius: 50px;
     overflow: hidden;
     transition: box-shadow 0.3s ease;
@@ -33,6 +34,15 @@
 #buttonDiv-login iframe,
 #buttonDiv-signup iframe {
     border-radius: 50px !important;
+    width: 100% !important;  
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    #buttonDiv-login,
+    #buttonDiv-signup {
+        max-width: calc(100% - 40px);  
+    }
 }
 
 /* ============================================================================

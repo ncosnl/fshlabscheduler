@@ -96,11 +96,13 @@ function renderGoogleButtons() {
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
 
+    // Responsive width: 320px on desktop, fit container on mobile
+    const isMobile = window.innerWidth <= 768;
     const buttonConfig = {
         theme: theme,
-        size: "large",
+        size: isMobile ? "large" : "large",
         shape: "pill",
-        width: "320"
+        width: isMobile ? window.innerWidth - 80 : 320  // Account for padding
     };
 
     if (buttonDivLogin) {
@@ -119,17 +121,24 @@ window.onload = function () {
 
     google.accounts.id.initialize({
         client_id: "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com",
-        callback: handleCredentialResponse
+        callback: handleCredentialResponse,
+        hosted_domain: "firstasia.edu.ph"
     });
 
     renderGoogleButtons();
     google.accounts.id.prompt();
 
+    // Re-render on window resize for responsiveness
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(renderGoogleButtons, 250);
+    });
+
     // Re-render buttons whenever the theme toggle is clicked
     document.addEventListener('click', function (e) {
         if (e.target.closest('.theme-toggle')) {
-            // Small delay to let the theme attribute update first
             setTimeout(renderGoogleButtons, 50);
         }
     });
-};
+};;
