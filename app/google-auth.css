@@ -5,58 +5,40 @@
 #buttonDiv-login,
 #buttonDiv-signup {
     width: 100%;
+    height: 44px;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 5px 0;
-    min-height: 50px; /* Match input field height */
+    margin: 5px 0 12px 0; /* Match .login-input margin-bottom */
+    border-radius: 50px;
+    transition: box-shadow 0.3s ease;
 }
 
-/* Style the container to match your form inputs */
 #buttonDiv-login > div,
 #buttonDiv-signup > div {
     width: 100% !important;
-    max-width: 280px;
+    height: 44px !important;
     display: flex !important;
     justify-content: center !important;
-    border-radius: 50px;
-    overflow: hidden;
+    align-items: center !important;
 }
 
-/* Make the iframe taller to match input fields */
 #buttonDiv-login iframe,
 #buttonDiv-signup iframe {
     width: 100% !important;
-    height: 50px !important; /* Match your input fields */
+    height: 44px !important;
     border-radius: 50px !important;
 }
 
-/* Scale up the button content */
-#buttonDiv-login > div > div,
-#buttonDiv-signup > div > div {
-    transform: scale(1.1);
-    transform-origin: center;
+/* Dark mode */
+[data-theme="dark"] #buttonDiv-login,
+[data-theme="dark"] #buttonDiv-signup {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+                0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-/* Mobile adjustments */
-@media (max-width: 768px) {
-    #buttonDiv-login > div,
-    #buttonDiv-signup > div {
-        max-width: 100%;
-        width: calc(100% - 40px);
-    }
-}
-
-/* ============================================================================
-   DARK MODE
-   ============================================================================ */
-
-[data-theme="dark"] #buttonDiv-login > div,
-[data-theme="dark"] #buttonDiv-signup > div {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] #buttonDiv-login:hover > div,
-[data-theme="dark"] #buttonDiv-signup:hover > div {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+[data-theme="dark"] #buttonDiv-login:hover,
+[data-theme="dark"] #buttonDiv-signup:hover {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25),
+                0 6px 20px rgba(0, 0, 0, 0.45);
 }
