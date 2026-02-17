@@ -1,9 +1,5 @@
 /* ============================================================================
    GOOGLE-AUTH.CSS - Google Sign-In Button Styles
-   Controls the appearance of the Google Sign-In button in both light and dark mode.
-   The JS (google-auth.js) renders theme="filled_black" in light mode and
-   theme="outline" in dark mode, so the button itself is always correct.
-   This file handles the wrapper container styling only.
    ============================================================================ */
 
 /* ============================================================================
@@ -13,41 +9,34 @@
 #buttonDiv-login,
 #buttonDiv-signup {
     width: 100%;
-    max-width: 400px;
+    max-width: 300px;
     display: flex;
     justify-content: center;
     align-items: center;
     margin: 5px auto;
-    padding: 0 10px; 
     border-radius: 50px;
-    overflow: visible;
     transition: box-shadow 0.3s ease;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
-/* Round off the inner iframe Google injects */
+/* Ensure inner elements don't overflow */
 #buttonDiv-login > div,
 #buttonDiv-signup > div {
-    border-radius: 50px !important;
     width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
 }
 
 #buttonDiv-login iframe,
 #buttonDiv-signup iframe {
-    border-radius: 50px !important;
-    width: 100% !important;
+    width: 300px !important;
+    max-width: 100% !important;
 }
 
-/* Mobile adjustments */
-@media (max-width: 768px) {
-    #buttonDiv-login,
-    #buttonDiv-signup {
-        max-width: 100%;
-        padding: 0 20px; /* ← More padding on mobile */
-    }
-}
+/* ============================================================================
+   DARK MODE
+   ============================================================================ */
 
-/* Dark mode styles... */
 [data-theme="dark"] #buttonDiv-login,
 [data-theme="dark"] #buttonDiv-signup {
     filter: none;

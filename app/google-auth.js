@@ -16,22 +16,19 @@ async function handleCredentialResponse(response) {
 
     if (!selectedRole) selectedRole = "Teacher";
 
-    // ── Auto-signup or login via your Worker backend ──
-    const API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev'; // ← same URL as auth.js
+    const API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev';
 
     try {
-        // First try login
         let res = await fetch(`${API_BASE}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email: responsePayload.email,
-                password: responsePayload.sub   // use Google's unique user ID as the password
+                password: responsePayload.sub
             })
         });
         let data = await res.json();
 
-        // If no account exists yet, create one automatically
         if (!data.success && data.message.includes('No account')) {
             res = await fetch(`${API_BASE}/api/signup`, {
                 method: 'POST',
@@ -50,7 +47,6 @@ async function handleCredentialResponse(response) {
             return;
         }
 
-        // Save the real JWT token so protected pages work
         localStorage.setItem('fsh_token',      data.token);
         localStorage.setItem('fsh_user_email', data.user.email);
         localStorage.setItem('fsh_user_role',  data.user.role);
@@ -85,7 +81,6 @@ function decodeJwtResponse(token) {
 
 function getGoogleButtonTheme() {
     const savedTheme = localStorage.getItem('fsh_theme') || 'light';
-    // Dark mode → outline (white) button; Light mode → filled black button
     return savedTheme === 'dark' ? 'outline' : 'filled_black';
 }
 
@@ -96,22 +91,12 @@ function renderGoogleButtons() {
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
 
-    // Calculate proper width based on container
-    const isMobile = window.innerWidth <= 768;
-    let buttonWidth = 320;
-    
-    if (isMobile && buttonDivLogin) {
-        // Get actual available width of parent container
-        const container = buttonDivLogin.parentElement;
-        const containerWidth = container ? container.offsetWidth : window.innerWidth;
-        buttonWidth = Math.min(containerWidth - 40, 400); // Leave 40px total padding, max 400px
-    }
-
     const buttonConfig = {
         theme: theme,
         size: "large",
         shape: "pill",
-        width: buttonWidth
+        width: "300",  // Fixed width that works on all screens
+        logo_alignment: "left"
     };
 
     if (buttonDivLogin) {
@@ -137,17 +122,10 @@ window.onload = function () {
     renderGoogleButtons();
     google.accounts.id.prompt();
 
-    // Re-render on window resize for responsiveness
-    let resizeTimer;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(renderGoogleButtons, 250);
-    });
-
     // Re-render buttons whenever the theme toggle is clicked
     document.addEventListener('click', function (e) {
         if (e.target.closest('.theme-toggle')) {
             setTimeout(renderGoogleButtons, 50);
         }
     });
-};;
+};
