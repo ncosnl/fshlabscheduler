@@ -9,29 +9,41 @@
     justify-content: center;
     align-items: center;
     margin: 5px 0;
+    min-height: 50px; /* Match input field height */
 }
 
-/* Let Google's button fill available space naturally */
+/* Style the container to match your form inputs */
 #buttonDiv-login > div,
 #buttonDiv-signup > div {
     width: 100% !important;
-    max-width: 400px;
+    max-width: 280px;
     display: flex !important;
     justify-content: center !important;
+    border-radius: 50px;
+    overflow: hidden;
 }
 
-/* Ensure iframe scales properly */
+/* Make the iframe taller to match input fields */
 #buttonDiv-login iframe,
 #buttonDiv-signup iframe {
     width: 100% !important;
-    height: 44px !important;
+    height: 50px !important; /* Match your input fields */
+    border-radius: 50px !important;
 }
 
-/* Mobile: constrain max width */
+/* Scale up the button content */
+#buttonDiv-login > div > div,
+#buttonDiv-signup > div > div {
+    transform: scale(1.1);
+    transform-origin: center;
+}
+
+/* Mobile adjustments */
 @media (max-width: 768px) {
     #buttonDiv-login > div,
     #buttonDiv-signup > div {
-        max-width: 280px;
+        max-width: 100%;
+        width: calc(100% - 40px);
     }
 }
 
@@ -41,13 +53,10 @@
 
 [data-theme="dark"] #buttonDiv-login > div,
 [data-theme="dark"] #buttonDiv-signup > div {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
-                0 4px 16px rgba(0, 0, 0, 0.3);
-    border-radius: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] #buttonDiv-login:hover > div,
 [data-theme="dark"] #buttonDiv-signup:hover > div {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25),
-                0 6px 20px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
