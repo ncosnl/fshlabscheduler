@@ -81,23 +81,10 @@ function backToForgotPassword() {
 // PASSWORD VISIBILITY TOGGLE
 // ============================================================================
 
+// every field toggles independently
 function togglePassword(inputId, icon) {
     const input = document.getElementById(inputId);
-    
-    if (inputId === 'login-password' || inputId === 'reset-password') {
-        // Single password field - toggle independently
-        toggleSinglePasswordField(input, icon);
-    } else {
-        // Signup has two password fields - sync them
-        const otherInputId = inputId === 'signup-password' 
-            ? 'signup-confirm-password' 
-            : 'signup-password';
-        
-        const otherInput = document.getElementById(otherInputId);
-        const otherIcon = otherInput?.parentElement.querySelector('.password-toggle');
-        
-        togglePasswordFields(input, icon, otherInput, otherIcon);
-    }
+    toggleSinglePasswordField(input, icon);
 }
 
 function toggleSinglePasswordField(input, icon) {
