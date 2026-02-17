@@ -98,7 +98,7 @@ function renderGoogleButtons() {
         type: "standard",
         text: "signin_with",
         logo_alignment: "left",
-        width: 300
+        width: 350
     };
 
     if (buttonDivLogin) {
