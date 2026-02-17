@@ -6,7 +6,18 @@
 const NOTIF_API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev';
 
 let notifPollingInterval = null;
-let lastUnreadCount      = 0;
+
+// Initialize lastUnreadCount from localStorage so we don't show toasts for old notifications
+function getLastUnreadCount() {
+    const stored = localStorage.getItem('fsh_last_unread_count');
+    return stored ? parseInt(stored, 10) : -1; // -1 means "first time ever"
+}
+
+function setLastUnreadCount(count) {
+    localStorage.setItem('fsh_last_unread_count', count.toString());
+}
+
+let lastUnreadCount = getLastUnreadCount();
 
 // ============================================================================
 // API HELPER
@@ -63,7 +74,7 @@ async function updateNotificationBadge() {
             }
         }
 
-        // If unread count increased since last check, show a toast for new ones
+        // Only show toast if count INCREASED and this isn't the first time checking
         if (unreadCount > lastUnreadCount && lastUnreadCount >= 0) {
             const newNotifs = data.notifications.filter(n => !n.read);
             // Only toast the newest unread notification to avoid spam
@@ -73,6 +84,7 @@ async function updateNotificationBadge() {
         }
 
         lastUnreadCount = unreadCount;
+        setLastUnreadCount(unreadCount); // ← Save to localStorage
 
     } catch (err) {
         console.error('Notification badge update failed:', err);

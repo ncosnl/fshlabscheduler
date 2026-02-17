@@ -269,8 +269,10 @@ function resendOTP() {
 
 async function logout() {
     if (!confirm('Are you sure you want to logout?')) return;
+    await unsubscribePushNotifications();
     await apiCall('/api/logout', 'POST').catch(() => {});
     clearSession();
+    localStorage.removeItem('fsh_last_unread_count'); // ← Clear notification count
     window.location.href = 'index.html';
 }
 
