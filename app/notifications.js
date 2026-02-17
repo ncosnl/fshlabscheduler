@@ -213,15 +213,6 @@ function showToastNotification(notification) {
     }, 7000);
 }
 
-// ============================================================================
-// BROWSER PUSH NOTIFICATIONS (optional, for supported browsers)
-// ============================================================================
-
-function requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
-}
 
 // ============================================================================
 // INITIALIZATION
