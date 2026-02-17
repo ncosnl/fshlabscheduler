@@ -91,13 +91,16 @@ function renderGoogleButtons() {
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
 
+    // Let Google handle responsive width automatically
     const buttonConfig = {
         theme: theme,
         size: "large",
         shape: "pill",
-        width: "300",  // Fixed width that works on all screens
+        type: "standard",
+        text: "signin_with",
         logo_alignment: "left"
     };
+    // Note: No width specified - Google will make it responsive
 
     if (buttonDivLogin) {
         buttonDivLogin.innerHTML = '';

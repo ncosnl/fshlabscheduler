@@ -2,51 +2,52 @@
    GOOGLE-AUTH.CSS - Google Sign-In Button Styles
    ============================================================================ */
 
-/* ============================================================================
-   BUTTON WRAPPER
-   ============================================================================ */
-
 #buttonDiv-login,
 #buttonDiv-signup {
     width: 100%;
-    max-width: 300px;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 5px auto;
-    border-radius: 50px;
-    transition: box-shadow 0.3s ease;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    margin: 5px 0;
 }
 
-/* Ensure inner elements don't overflow */
+/* Let Google's button fill available space naturally */
 #buttonDiv-login > div,
 #buttonDiv-signup > div {
     width: 100% !important;
+    max-width: 400px;
     display: flex !important;
     justify-content: center !important;
 }
 
+/* Ensure iframe scales properly */
 #buttonDiv-login iframe,
 #buttonDiv-signup iframe {
-    width: 300px !important;
-    max-width: 100% !important;
+    width: 100% !important;
+    height: 44px !important;
+}
+
+/* Mobile: constrain max width */
+@media (max-width: 768px) {
+    #buttonDiv-login > div,
+    #buttonDiv-signup > div {
+        max-width: 280px;
+    }
 }
 
 /* ============================================================================
    DARK MODE
    ============================================================================ */
 
-[data-theme="dark"] #buttonDiv-login,
-[data-theme="dark"] #buttonDiv-signup {
-    filter: none;
-    background-color: transparent;
+[data-theme="dark"] #buttonDiv-login > div,
+[data-theme="dark"] #buttonDiv-signup > div {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
                 0 4px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 24px;
 }
 
-[data-theme="dark"] #buttonDiv-login:hover,
-[data-theme="dark"] #buttonDiv-signup:hover {
+[data-theme="dark"] #buttonDiv-login:hover > div,
+[data-theme="dark"] #buttonDiv-signup:hover > div {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25),
                 0 6px 20px rgba(0, 0, 0, 0.45);
 }
