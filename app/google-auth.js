@@ -87,9 +87,16 @@ function getGoogleButtonTheme() {
 function renderGoogleButtons() {
     if (typeof google === 'undefined') return;
 
-    const buttonDivLogin = document.getElementById("buttonDiv-login");
+    const buttonDivLogin  = document.getElementById("buttonDiv-login");
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
+
+    // Use the container's actual rendered width so the button matches other inputs.
+    // Fall back to 400 if the element isn't in the DOM yet.
+    const referenceEl = buttonDivLogin || buttonDivSignup;
+    const containerWidth = referenceEl
+        ? Math.floor(referenceEl.getBoundingClientRect().width) || referenceEl.offsetWidth
+        : 400;
 
     const buttonConfig = {
         theme: theme,
@@ -98,17 +105,17 @@ function renderGoogleButtons() {
         type: "standard",
         text: "signin_with",
         logo_alignment: "left",
-        width: 350
+        width: containerWidth
     };
 
     if (buttonDivLogin) {
         buttonDivLogin.innerHTML = '';
-        google.accounts.id.renderButton(buttonDivLogin, buttonConfig);
+        google.accounts.id.renderButton(buttonDivLogin, { ...buttonConfig });
     }
 
     if (buttonDivSignup) {
         buttonDivSignup.innerHTML = '';
-        google.accounts.id.renderButton(buttonDivSignup, buttonConfig);
+        google.accounts.id.renderButton(buttonDivSignup, { ...buttonConfig });
     }
 }
 
@@ -130,4 +137,12 @@ window.onload = function () {
             setTimeout(renderGoogleButtons, 50);
         }
     });
+
+    // Re-render if the container is resized (e.g. window resize / mobile rotation)
+    const observerTarget = document.getElementById("buttonDiv-login")
+                        || document.getElementById("buttonDiv-signup");
+    if (observerTarget && window.ResizeObserver) {
+        new ResizeObserver(() => setTimeout(renderGoogleButtons, 50))
+            .observe(observerTarget.parentElement || observerTarget);
+    }
 };
