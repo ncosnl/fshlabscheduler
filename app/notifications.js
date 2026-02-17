@@ -230,16 +230,24 @@ function showToastNotification(notification) {
 // INITIALIZATION
 // ============================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    requestNotificationPermission();
+// Wait for badge element to be created before starting polling
+function waitForBadgeAndStart() {
+    const badge = document.getElementById('notification-badge');
+    if (badge) {
+        startNotificationPolling();
+    } else {
+        // Badge not ready yet, try again in 50ms
+        setTimeout(waitForBadgeAndStart, 50);
+    }
+}
 
-    // Only start polling if user is logged in
+document.addEventListener('DOMContentLoaded', () => {
     const token = notifGetToken();
     if (token) {
-        startNotificationPolling();
+        // Wait for mail button/badge to be created by sidebar-nav.js
+        waitForBadgeAndStart();
     }
-
-    // Stop polling when leaving page
+    
     window.addEventListener('beforeunload', stopNotificationPolling);
 });
 
