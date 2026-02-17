@@ -17,7 +17,7 @@ async function handleCredentialResponse(response) {
     if (!selectedRole) selectedRole = "Teacher";
 
     // ── Auto-signup or login via your Worker backend ──
-    const API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev/'; // ← same URL as auth.js
+    const API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev'; // ← same URL as auth.js
 
     try {
         // First try login

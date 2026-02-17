@@ -2,7 +2,7 @@
 // PROFILE.JS — Cloudflare Workers Version
 // ============================================================================
 
-const API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev/'; // ← same as auth.js
+const API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev'; // ← same as auth.js
 
 // ── Token helpers (mirrors auth.js) ──────────────────────────────────────────
 function getToken()     { return localStorage.getItem('fsh_token'); }
