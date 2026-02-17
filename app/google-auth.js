@@ -6,27 +6,60 @@
 // GOOGLE SIGN-IN HANDLER
 // ============================================================================
 
-function handleCredentialResponse(response) {
+async function handleCredentialResponse(response) {
     const responsePayload = decodeJwtResponse(response.credential);
 
-    console.log("ID: " + responsePayload.sub);
-    console.log("Email: " + responsePayload.email);
-
-    // Validate domain
     if (responsePayload.hd !== 'firstasia.edu.ph') {
         alert("Access Denied: Please sign in with your school email (@firstasia.edu.ph).");
         return;
     }
 
-    // Use selected role or default to Teacher
-    if (!selectedRole) {
-        selectedRole = "Teacher";
-    }
+    if (!selectedRole) selectedRole = "Teacher";
 
-    // Save to localStorage and redirect
-    localStorage.setItem('fsh_user_email', responsePayload.email);
-    localStorage.setItem('fsh_user_role', selectedRole);
-    window.location.href = "dashboard.html";
+    // ── Auto-signup or login via your Worker backend ──
+    const API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev/'; // ← same URL as auth.js
+
+    try {
+        // First try login
+        let res = await fetch(`${API_BASE}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: responsePayload.email,
+                password: responsePayload.sub   // use Google's unique user ID as the password
+            })
+        });
+        let data = await res.json();
+
+        // If no account exists yet, create one automatically
+        if (!data.success && data.message.includes('No account')) {
+            res = await fetch(`${API_BASE}/api/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email:    responsePayload.email,
+                    password: responsePayload.sub,
+                    role:     selectedRole
+                })
+            });
+            data = await res.json();
+        }
+
+        if (!data.success) {
+            alert("Sign-in failed: " + data.message);
+            return;
+        }
+
+        // Save the real JWT token so protected pages work
+        localStorage.setItem('fsh_token',      data.token);
+        localStorage.setItem('fsh_user_email', data.user.email);
+        localStorage.setItem('fsh_user_role',  data.user.role);
+        window.location.href = "dashboard.html";
+
+    } catch (err) {
+        alert("Could not reach the server. Please try again.");
+        console.error(err);
+    }
 }
 
 // ============================================================================
