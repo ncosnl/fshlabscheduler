@@ -187,7 +187,7 @@ function selectLab(labName) {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize dashboard if on dashboard page
-    if (window.location.pathname.includes("dashboard.html")) {
+    if (window.location.pathname.includes("dashboard")) {
         initializeDashboard();
     }
 });
