@@ -13,13 +13,14 @@
 #buttonDiv-login,
 #buttonDiv-signup {
     width: 100%;
-    max-width: 320px;  
+    max-width: 400px;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 5px auto;  
+    margin: 5px auto;
+    padding: 0 10px; 
     border-radius: 50px;
-    overflow: hidden;
+    overflow: visible;
     transition: box-shadow 0.3s ease;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
@@ -34,23 +35,19 @@
 #buttonDiv-login iframe,
 #buttonDiv-signup iframe {
     border-radius: 50px !important;
-    width: 100% !important;  
+    width: 100% !important;
 }
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
     #buttonDiv-login,
     #buttonDiv-signup {
-        max-width: calc(100% - 40px);  
+        max-width: 100%;
+        padding: 0 20px; /* ← More padding on mobile */
     }
 }
 
-/* ============================================================================
-   DARK MODE - outline (white) button rendered by JS
-   No background override needed — Google's outline button is already white.
-   Just add a subtle glow to help it stand out against the dark background.
-   ============================================================================ */
-
+/* Dark mode styles... */
 [data-theme="dark"] #buttonDiv-login,
 [data-theme="dark"] #buttonDiv-signup {
     filter: none;

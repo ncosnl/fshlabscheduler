@@ -96,13 +96,22 @@ function renderGoogleButtons() {
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
 
-    // Responsive width: 320px on desktop, fit container on mobile
+    // Calculate proper width based on container
     const isMobile = window.innerWidth <= 768;
+    let buttonWidth = 320;
+    
+    if (isMobile && buttonDivLogin) {
+        // Get actual available width of parent container
+        const container = buttonDivLogin.parentElement;
+        const containerWidth = container ? container.offsetWidth : window.innerWidth;
+        buttonWidth = Math.min(containerWidth - 40, 400); // Leave 40px total padding, max 400px
+    }
+
     const buttonConfig = {
         theme: theme,
-        size: isMobile ? "large" : "large",
+        size: "large",
         shape: "pill",
-        width: isMobile ? window.innerWidth - 80 : 320  // Account for padding
+        width: buttonWidth
     };
 
     if (buttonDivLogin) {
