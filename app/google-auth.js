@@ -96,7 +96,7 @@ function renderGoogleButtons() {
         ? Math.floor(referenceEl.getBoundingClientRect().width) || referenceEl.offsetWidth
         : 0;
 
-    // Use measured width, but never pass 0 — fall back to 400 so Google always renders
+    // Use measured width, but never pass 0 - fall back to 400 so Google always renders
     const containerWidth = measured > 0 ? measured : 400;
 
     const buttonConfig = {
@@ -104,6 +104,9 @@ function renderGoogleButtons() {
         size: "large",
         shape: "pill",
         type: "standard",
+        // NOTE: 'text' is intentionally omitted - hardcoding it prevents Google
+        // from showing the personalized "Sign in as [Name]" label.
+        // Google will auto-select the label based on the detected session.
         logo_alignment: "left",
         width: containerWidth
     };
@@ -122,7 +125,6 @@ function renderGoogleButtons() {
 window.onload = function () {
     if (typeof google === 'undefined') return;
 
-    // 1. Initialize first
     google.accounts.id.initialize({
         client_id: "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com",
         callback: handleCredentialResponse
