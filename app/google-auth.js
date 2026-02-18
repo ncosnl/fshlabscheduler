@@ -108,7 +108,7 @@ function renderGoogleButtons() {
         // from showing the personalized "Sign in as [Name]" label.
         // Google will auto-select the label based on the detected session.
         logo_alignment: "left",
-        width: containerWidth
+        width: 310
     };
 
     if (buttonDivLogin) {
