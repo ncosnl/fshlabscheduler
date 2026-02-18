@@ -36,12 +36,12 @@
 /* Dark mode */
 [data-theme="dark"] #buttonDiv-login,
 [data-theme="dark"] #buttonDiv-signup {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+    box-shadow: 0 0 0 0px rgba(255, 255, 255, 0.1),
                 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] #buttonDiv-login:hover,
 [data-theme="dark"] #buttonDiv-signup:hover {
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25),
+    box-shadow: 0 0 0 0px rgba(255, 255, 255, 0.25),
                 0 6px 20px rgba(0, 0, 0, 0.45);
 }
