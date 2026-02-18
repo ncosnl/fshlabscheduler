@@ -1321,7 +1321,6 @@ nav img[src*="fsh_logo"] {
 
     .lab-header {
         padding: 30px 5%;
-        padding-left: calc(20px + 44px + 15px); /* hamburger left + width + gap */
     }
 
     .lab-header-content {
