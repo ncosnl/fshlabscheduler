@@ -125,8 +125,7 @@ window.onload = function () {
     // 1. Initialize first
     google.accounts.id.initialize({
         client_id: "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com",
-        callback: handleCredentialResponse,
-        hosted_domain: "firstasia.edu.ph"
+        callback: handleCredentialResponse
     });
 
     // 2. Render the button immediately (uses 400px fallback if layout not ready)
