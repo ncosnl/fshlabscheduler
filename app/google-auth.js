@@ -95,12 +95,10 @@ function renderGoogleButtons(force = false) {
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
 
-    const referenceEl = buttonDivLogin || buttonDivSignup;
-    const measured = referenceEl
-        ? Math.floor(referenceEl.getBoundingClientRect().width) || referenceEl.offsetWidth
-        : 0;
-
-    const containerWidth = measured > 0 ? measured : 400;
+    // Use the buttonDiv container width, capped at Google's max of 400px
+    const refEl = buttonDivLogin || buttonDivSignup;
+    const measured = refEl ? Math.floor(refEl.getBoundingClientRect().width) : 0;
+    const containerWidth = Math.min(measured > 0 ? measured : 400, 400);
 
     const buttonConfig = {
         theme: theme,
@@ -108,7 +106,7 @@ function renderGoogleButtons(force = false) {
         shape: "pill",
         type: "standard",
         text: "signin_with",
-        logo_alignment: "left",
+        logo_alignment: "center",
         width: containerWidth
     };
 
