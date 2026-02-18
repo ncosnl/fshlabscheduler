@@ -128,7 +128,6 @@ window.onload = function () {
         hosted_domain: "firstasia.edu.ph"
     });
 
-    renderGoogleButtons();
     requestAnimationFrame(() => setTimeout(renderGoogleButtons, 100));
     google.accounts.id.prompt();
 
