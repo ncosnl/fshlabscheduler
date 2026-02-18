@@ -91,12 +91,13 @@ function renderGoogleButtons() {
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
 
-    // Use the container's actual rendered width so the button matches other inputs.
-    // Fall back to 400 if the element isn't in the DOM yet.
     const referenceEl = buttonDivLogin || buttonDivSignup;
-    const containerWidth = referenceEl
+    const measured = referenceEl
         ? Math.floor(referenceEl.getBoundingClientRect().width) || referenceEl.offsetWidth
-        : 400;
+        : 0;
+
+    // Use measured width, but never pass 0 — fall back to 400 so Google always renders
+    const containerWidth = measured > 0 ? measured : 400;
 
     const buttonConfig = {
         theme: theme,
@@ -122,14 +123,21 @@ function renderGoogleButtons() {
 window.onload = function () {
     if (typeof google === 'undefined') return;
 
+    // 1. Initialize first
     google.accounts.id.initialize({
         client_id: "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com",
         callback: handleCredentialResponse,
         hosted_domain: "firstasia.edu.ph"
     });
 
-    requestAnimationFrame(() => setTimeout(renderGoogleButtons, 100));
-    google.accounts.id.prompt();
+    // 2. Render the button immediately (uses 400px fallback if layout not ready)
+    renderGoogleButtons();
+
+    // 3. Re-render once layout is fully painted to get the exact container width
+    requestAnimationFrame(() => setTimeout(renderGoogleButtons, 150));
+
+    // 4. Prompt AFTER button is rendered so Google can show personalized button
+    setTimeout(() => google.accounts.id.prompt(), 200);
 
     // Re-render buttons whenever the theme toggle is clicked
     document.addEventListener('click', function (e) {
@@ -137,7 +145,7 @@ window.onload = function () {
             setTimeout(renderGoogleButtons, 50);
         }
     });
-    
+
     // Re-render if the container is resized (e.g. window resize / mobile rotation)
     const observerTarget = document.getElementById("buttonDiv-login")
                         || document.getElementById("buttonDiv-signup");
