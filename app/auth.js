@@ -47,7 +47,7 @@ let otpData        = null;
 function handleSelection(clickedBtn) {
     selectedRole = clickedBtn.innerText;
     const emailInput = document.querySelector('#login-email');
-    if (emailInput) emailInput.placeholder = selectedRole === 'Admin' ? 'admin@firstasia.edu.ph' : 'teacher@firstasia.edu.ph';
+    if (emailInput) emailInput.placeholder = 'usernameid@firstasia.edu.ph';
     clearPasswordField('login-password');
     showView('login-view');
 }
@@ -177,6 +177,13 @@ async function sendOTP() {
 
         clearInput('otp-code');
         showView('otp-view');
+
+        // Show sent confirmation
+        const sentMsg = document.getElementById('otp-sent-message');
+        if (sentMsg) {
+            sentMsg.style.display = 'block';
+            setTimeout(() => sentMsg.style.display = 'none', 5000);
+        }
 
     } catch {
         alert('Could not reach the server. Please try again.');
