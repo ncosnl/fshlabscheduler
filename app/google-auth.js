@@ -2,6 +2,10 @@
 // GOOGLE-AUTH.JS - Google Sign-In Integration
 // ============================================================================
 
+// ============================================================================
+// GOOGLE SIGN-IN HANDLER
+// ============================================================================
+
 async function handleCredentialResponse(response) {
     const responsePayload = decodeJwtResponse(response.credential);
 
@@ -67,6 +71,7 @@ function decodeJwtResponse(token) {
             .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
             .join('')
     );
+
     return JSON.parse(jsonPayload);
 }
 
@@ -86,15 +91,21 @@ function renderGoogleButtons() {
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
 
-    // Do NOT pass a width — let Google size to its content (works for both
-    // the standard "Sign in with Google" and personalized "Sign in as [Name]").
-    // CSS in google-auth.css stretches the iframe to fill the container.
+    const referenceEl = buttonDivLogin || buttonDivSignup;
+    const measured = referenceEl
+        ? Math.floor(referenceEl.getBoundingClientRect().width) || referenceEl.offsetWidth
+        : 0;
+
+    // Use measured width, but never pass 0 - fall back to 400 so Google always renders
+    const containerWidth = measured > 0 ? measured : 400;
+
     const buttonConfig = {
         theme: theme,
         size: "large",
         shape: "pill",
         type: "standard",
-        logo_alignment: "left"
+        logo_alignment: "left",
+        width: containerWidth
     };
 
     if (buttonDivLogin) {
@@ -111,23 +122,29 @@ function renderGoogleButtons() {
 window.onload = function () {
     if (typeof google === 'undefined') return;
 
-    // hosted_domain removed — domain check is done in handleCredentialResponse.
-    // Removing it allows Google to detect the active session for the personalized button.
+
     google.accounts.id.initialize({
         client_id: "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com",
         callback: handleCredentialResponse
     });
 
+    // 2. Render the button immediately (uses 400px fallback if layout not ready)
     renderGoogleButtons();
+
+    // 3. Re-render once layout is fully painted to get the exact container width
     requestAnimationFrame(() => setTimeout(renderGoogleButtons, 150));
+
+    // 4. Prompt AFTER button is rendered so Google can show personalized button
     setTimeout(() => google.accounts.id.prompt(), 200);
 
+    // Re-render buttons whenever the theme toggle is clicked
     document.addEventListener('click', function (e) {
         if (e.target.closest('.theme-toggle')) {
             setTimeout(renderGoogleButtons, 50);
         }
     });
 
+    // Re-render if the container is resized (e.g. window resize / mobile rotation)
     const observerTarget = document.getElementById("buttonDiv-login")
                         || document.getElementById("buttonDiv-signup");
     if (observerTarget && window.ResizeObserver) {
