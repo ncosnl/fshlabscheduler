@@ -376,11 +376,12 @@
         left: 20px;
     }
 
-    /* On non-dashboard pages, fix the hamburger so it's not hidden under the page header */
+    /* On non-dashboard pages, raise the hamburger above the page header */
     body[data-page="laboratory"] .menu-toggle,
     body[data-page="mail"] .menu-toggle,
     body[data-page="profile"] .menu-toggle {
-        position: fixed;
+        position: absolute;
+        z-index: 1001;
         border-color: var(--text-color);
     }
 
