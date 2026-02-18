@@ -104,7 +104,6 @@ function renderGoogleButtons() {
         size: "large",
         shape: "pill",
         type: "standard",
-        text: "signin_with",
         logo_alignment: "left",
         width: containerWidth
     };
