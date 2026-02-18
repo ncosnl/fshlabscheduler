@@ -7,30 +7,31 @@
     width: 100%;
     height: 44px;
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;   /* centre the iframe horizontally */
     align-items: center;
-    margin: 5px 0 12px 0; /* Match .login-input margin-bottom */
+    margin: 5px 0 12px 0;
     border-radius: 50px;
-    transition: box-shadow 0.3s ease;
     overflow: hidden;
 }
 
+/* The wrapper div Google injects */
 #buttonDiv-login > div,
 #buttonDiv-signup > div {
     width: 100% !important;
     height: 44px !important;
     display: flex !important;
-    justify-content: flex-start !important;
+    justify-content: center !important;
     align-items: center !important;
 }
 
+/* The iframe itself */
 #buttonDiv-login iframe,
 #buttonDiv-signup iframe {
     width: 100% !important;
     min-width: 100% !important;
     height: 44px !important;
     border-radius: 50px !important;
-    margin-left: 0 !important;
+    margin: 0 !important;
 }
 
 /* Dark mode */
