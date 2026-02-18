@@ -96,7 +96,7 @@ function renderGoogleButtons() {
         ? Math.floor(referenceEl.getBoundingClientRect().width) || referenceEl.offsetWidth
         : 0;
 
-    // Use measured width, but never pass 0 — fall back to 400 so Google always renders
+    // Use measured width, but never pass 0 â€” fall back to 400 so Google always renders
     const containerWidth = measured > 0 ? measured : 400;
 
     const buttonConfig = {
@@ -104,6 +104,7 @@ function renderGoogleButtons() {
         size: "large",
         shape: "pill",
         type: "standard",
+        text: "signin_with",
         logo_alignment: "left",
         width: containerWidth
     };
