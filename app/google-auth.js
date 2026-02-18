@@ -129,6 +129,7 @@ window.onload = function () {
     });
 
     renderGoogleButtons();
+    requestAnimationFrame(() => setTimeout(renderGoogleButtons, 100));
     google.accounts.id.prompt();
 
     // Re-render buttons whenever the theme toggle is clicked
@@ -137,7 +138,7 @@ window.onload = function () {
             setTimeout(renderGoogleButtons, 50);
         }
     });
-
+    
     // Re-render if the container is resized (e.g. window resize / mobile rotation)
     const observerTarget = document.getElementById("buttonDiv-login")
                         || document.getElementById("buttonDiv-signup");
