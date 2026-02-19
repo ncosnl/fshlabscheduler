@@ -357,8 +357,8 @@ function openEditModal(reservationId) {
     const r = reservationsCache.find(r => r.id === reservationId);
     if (!r) return;
 
-    // Remove existing modal if any
     document.getElementById('edit-reservation-modal')?.remove();
+    document.body.style.overflow = 'hidden';
 
     const modal = document.createElement('div');
     modal.id = 'edit-reservation-modal';
@@ -366,8 +366,99 @@ function openEditModal(reservationId) {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0,0,0,0.5); z-index: 2000;
         display: flex; align-items: center; justify-content: center;
-        padding: 20px; box-sizing: border-box;
+        padding: 20px; box-sizing: border-box; overflow-y: auto;
     `;
+
+    modal.innerHTML = `
+        <div style="
+            background: var(--card-bg); border-radius: 20px; width: 100%;
+            max-width: 480px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden; margin: auto;
+        ">
+            <div style="
+                background: linear-gradient(135deg, #081316 0%, #2a3a3f 100%);
+                padding: 20px 25px;
+                display: flex; justify-content: space-between; align-items: center;
+            ">
+                <h2 style="color:white; margin:0; font-size:1.1rem; font-weight:600;">
+                    <i class="fas fa-edit" style="margin-right:8px;"></i>Edit Reservation
+                </h2>
+                <button onclick="closeEditModal()" style="
+                    background: rgba(255,255,255,0.2); border: none; color: white;
+                    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+                    font-size: 14px; display: flex; align-items: center; justify-content: center;
+                "><i class="fas fa-times"></i></button>
+            </div>
+            <form id="edit-reservation-form" style="padding: 20px; display:flex; flex-direction:column; gap:14px;">
+                <div>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Date</label>
+                    <input type="date" id="edit-date" class="login-input" value="${r.date}" required
+                        min="${new Date().toISOString().split('T')[0]}" style="margin:0;">
+                </div>
+                <div>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Time Slot</label>
+                    <select id="edit-timeslot" class="login-input" required style="margin:0;">
+                        ${TIME_SLOTS.map(slot => `<option value="${slot}" ${slot === r.timeSlot ? 'selected' : ''}>${slot}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Teacher's Name</label>
+                    <input type="text" id="edit-teacher-name" class="login-input" value="${r.teacherName || ''}" required style="margin:0;">
+                </div>
+                <div>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Subject</label>
+                    <select id="edit-subject" class="login-input" required style="margin:0;">
+                        <option value="">Select subject</option>
+                        ${['General Biology','Physics','Chemistry','ETECH'].map(s =>
+                            `<option value="${s}" ${s === r.subject ? 'selected' : ''}>${s}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Grade Level</label>
+                    <select id="edit-grade" class="login-input" required style="margin:0;">
+                        <option value="">Select grade level</option>
+                        <option value="11" ${r.grade == '11' ? 'selected' : ''}>Grade 11</option>
+                        <option value="12" ${r.grade == '12' ? 'selected' : ''}>Grade 12</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Number of Students</label>
+                    <input type="number" id="edit-students" class="login-input" value="${r.students}" required min="1" max="50" style="margin:0;">
+                </div>
+                <div>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Purpose / Activity</label>
+                    <textarea id="edit-purpose" class="login-input" required style="margin:0; min-height:80px; resize:vertical; font-family:inherit;">${r.purpose}</textarea>
+                </div>
+                ${r.status === 'approved' ? `
+                <div style="background:rgba(245,158,11,0.1); border:1px solid #f59e0b; border-radius:10px;
+                    padding:10px 14px; font-size:13px; color:#b45309; display:flex; gap:8px; align-items:center;">
+                    <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
+                    Saving will reset this reservation to <strong>&nbsp;pending&nbsp;</strong> and require re-approval.
+                </div>` : ''}
+                <div style="display:flex; gap:10px; padding-top:4px;">
+                    <button type="button" onclick="closeEditModal()" style="
+                        flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                        background:transparent; color:var(--secondary-text);
+                        border:1px solid var(--secondary-text); font-size:14px; font-weight:500;
+                    ">Cancel</button>
+                    <button type="submit" id="edit-submit-btn" style="
+                        flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                        background:#081316; color:white; border:none;
+                        font-size:14px; font-weight:500; display:flex;
+                        align-items:center; justify-content:center; gap:8px;
+                    "><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeEditModal(); });
+    document.getElementById('edit-reservation-form').addEventListener('submit', e => {
+        handleEditSubmit(e, reservationId);
+    });
+}
 
     modal.innerHTML = `
         <div style="
@@ -466,10 +557,10 @@ function openEditModal(reservationId) {
     document.getElementById('edit-reservation-form').addEventListener('submit', e => {
         handleEditSubmit(e, reservationId);
     });
-}
 
 function closeEditModal() {
     document.getElementById('edit-reservation-modal')?.remove();
+    document.body.style.overflow = '';
 }
 
 async function handleEditSubmit(e, reservationId) {

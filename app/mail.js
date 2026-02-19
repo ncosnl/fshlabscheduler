@@ -417,42 +417,42 @@ async function openEditModalFromMail(reservationId, labName) {
     modal.innerHTML = `
         <div style="
             background: var(--card-bg); border-radius: 20px; width: 100%;
-            max-width: 500px; max-height: 90vh; overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 480px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden; margin: auto;
         ">
             <div style="
                 background: linear-gradient(135deg, #081316 0%, #2a3a3f 100%);
-                padding: 20px 25px; border-radius: 20px 20px 0 0;
+                padding: 20px 25px;
                 display: flex; justify-content: space-between; align-items: center;
             ">
-                <h2 style="color:white; margin:0; font-size:1.2rem;">
+                <h2 style="color:white; margin:0; font-size:1.1rem; font-weight:600;">
                     <i class="fas fa-edit" style="margin-right:8px;"></i>Edit Reservation
                 </h2>
                 <button onclick="closeMailEditModal()" style="
-                    background: rgba(255,255,255,0.15); border: none; color: white;
-                    width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-                    font-size: 16px; display: flex; align-items: center; justify-content: center;
+                    background: rgba(255,255,255,0.2); border: none; color: white;
+                    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+                    font-size: 14px; display: flex; align-items: center; justify-content: center;
                 "><i class="fas fa-times"></i></button>
             </div>
-            <form id="mail-edit-form" style="padding: 25px; display:flex; flex-direction:column; gap:16px;">
+            <form id="mail-edit-form" style="padding: 20px; display:flex; flex-direction:column; gap:14px;">
                 <div>
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Date</label>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Date</label>
                     <input type="date" id="mail-edit-date" class="login-input" value="${r.date}" required
-                        min="${new Date().toISOString().split('T')[0]}">
+                        min="${new Date().toISOString().split('T')[0]}" style="margin:0;">
                 </div>
                 <div>
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Time Slot</label>
-                    <select id="mail-edit-timeslot" class="login-input" required>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Time Slot</label>
+                    <select id="mail-edit-timeslot" class="login-input" required style="margin:0;">
                         ${TIME_SLOTS_MAIL.map(s => `<option value="${s}" ${s === r.timeSlot ? 'selected' : ''}>${s}</option>`).join('')}
                     </select>
                 </div>
                 <div>
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Teacher's Name</label>
-                    <input type="text" id="mail-edit-teacher" class="login-input" value="${r.teacherName || ''}" required>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Teacher's Name</label>
+                    <input type="text" id="mail-edit-teacher" class="login-input" value="${r.teacherName || ''}" required style="margin:0;">
                 </div>
                 <div>
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Subject</label>
-                    <select id="mail-edit-subject" class="login-input" required>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Subject</label>
+                    <select id="mail-edit-subject" class="login-input" required style="margin:0;">
                         <option value="">Select subject</option>
                         ${['General Biology','Physics','Chemistry','ETECH'].map(s =>
                             `<option value="${s}" ${s === r.subject ? 'selected' : ''}>${s}</option>`
@@ -460,36 +460,36 @@ async function openEditModalFromMail(reservationId, labName) {
                     </select>
                 </div>
                 <div>
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Grade Level</label>
-                    <select id="mail-edit-grade" class="login-input" required>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Grade Level</label>
+                    <select id="mail-edit-grade" class="login-input" required style="margin:0;">
                         <option value="">Select grade</option>
                         <option value="11" ${r.grade == '11' ? 'selected' : ''}>Grade 11</option>
                         <option value="12" ${r.grade == '12' ? 'selected' : ''}>Grade 12</option>
                     </select>
                 </div>
                 <div>
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Number of Students</label>
-                    <input type="number" id="mail-edit-students" class="login-input" value="${r.students}" required min="1" max="50">
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Number of Students</label>
+                    <input type="number" id="mail-edit-students" class="login-input" value="${r.students}" required min="1" max="50" style="margin:0;">
                 </div>
                 <div>
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Purpose / Activity</label>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Purpose / Activity</label>
                     <textarea id="mail-edit-purpose" class="login-input" required
-                        style="min-height:80px; resize:vertical; font-family:inherit;">${r.purpose}</textarea>
+                        style="margin:0; min-height:80px; resize:vertical; font-family:inherit;">${r.purpose}</textarea>
                 </div>
                 ${r.status === 'approved' ? `
-                <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:10px;
-                    padding:12px; font-size:13px; color:#92400e; display:flex; gap:8px; align-items:center;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Editing will reset status to <strong style="margin-left:3px;">pending</strong> and require re-approval.
+                <div style="background:rgba(245,158,11,0.1); border:1px solid #f59e0b; border-radius:10px;
+                    padding:10px 14px; font-size:13px; color:#b45309; display:flex; gap:8px; align-items:center;">
+                    <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
+                    Saving will reset this reservation to <strong>&nbsp;pending&nbsp;</strong> and require re-approval.
                 </div>` : ''}
-                <div style="display:flex; gap:12px; margin-top:4px;">
+                <div style="display:flex; gap:10px; padding-top:4px;">
                     <button type="button" onclick="closeMailEditModal()" style="
-                        flex:1; padding:12px; border-radius:50px; cursor:pointer;
-                        background:var(--bg-color); color:var(--secondary-text);
+                        flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                        background:transparent; color:var(--secondary-text);
                         border:1px solid var(--secondary-text); font-size:14px; font-weight:500;
                     ">Cancel</button>
                     <button type="submit" id="mail-edit-submit" style="
-                        flex:1; padding:12px; border-radius:50px; cursor:pointer;
+                        flex:1; padding:11px; border-radius:50px; cursor:pointer;
                         background:#081316; color:white; border:none;
                         font-size:14px; font-weight:500; display:flex;
                         align-items:center; justify-content:center; gap:8px;
@@ -500,6 +500,7 @@ async function openEditModalFromMail(reservationId, labName) {
     `;
 
     document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
     modal.addEventListener('click', e => { if (e.target === modal) closeMailEditModal(); });
 
     document.getElementById('mail-edit-form').addEventListener('submit', async (e) => {
@@ -535,6 +536,7 @@ async function openEditModalFromMail(reservationId, labName) {
 
 function closeMailEditModal() {
     document.getElementById('mail-edit-modal')?.remove();
+    document.body.style.overflow = '';
 }
 
 function goBackToDashboard() { window.location.href = 'dashboard.html'; }
