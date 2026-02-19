@@ -104,24 +104,23 @@ function renderGoogleButtons(force = false) {
     const fallbackWidth = Math.min(window.innerWidth - 80, 400);
     const containerWidth = Math.min(measured > 20 ? measured : fallbackWidth, 400);
 
-    const buttonConfig = {
+    const baseConfig = {
         theme: theme,
         size: "large",
         shape: "pill",
         type: "standard",
-        text: "signin_with",
         logo_alignment: "left",
         width: containerWidth
     };
 
     if (buttonDivLogin) {
         buttonDivLogin.innerHTML = '';
-        google.accounts.id.renderButton(buttonDivLogin, { ...buttonConfig });
+        google.accounts.id.renderButton(buttonDivLogin, { ...baseConfig, text: "signin_with" });
     }
 
     if (buttonDivSignup) {
         buttonDivSignup.innerHTML = '';
-        google.accounts.id.renderButton(buttonDivSignup, { ...buttonConfig });
+        google.accounts.id.renderButton(buttonDivSignup, { ...baseConfig, text: "signup_with" });
     }
 
     buttonsRendered = true;
@@ -133,8 +132,7 @@ window.onload = function () {
     // 1. Initialize
     google.accounts.id.initialize({
         client_id: "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com",
-        callback: handleCredentialResponse,
-        hosted_domain: "firstasia.edu.ph"
+        callback: handleCredentialResponse
     });
 
     // 2. Render once layout is painted to get correct container width
