@@ -376,7 +376,9 @@ function formatDate(dateString) {
 }
 
 function getTimeAgo(dateString) {
-    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+    // Ensure timestamp is treated as UTC (append Z if no timezone info present)
+    const utcString = dateString && !dateString.endsWith('Z') && !dateString.includes('+') ? dateString + 'Z' : dateString;
+    const seconds = Math.floor((new Date() - new Date(utcString)) / 1000);
     if (seconds < 60)     return 'Just now';
     if (seconds < 3600)   return `${Math.floor(seconds / 60)} minutes ago`;
     if (seconds < 86400)  return `${Math.floor(seconds / 3600)} hours ago`;
