@@ -302,13 +302,15 @@
         top: 0;
         left: -220px;
         width: 220px;
-        height: 100vh;
+        height: 100svh; /* scales to actual visible browser height */
         background-color: var(--nav-bg);
         box-shadow: 2px 0 10px var(--shadow);
         z-index: 1000;
-        padding: 12px 15px 8px;
+        padding: 30px 15px 15px;
         transition: left 0.3s ease;
-        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .dash-nav.active {
@@ -321,16 +323,19 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 8px;
+        gap: 25px;
         padding: 0;
-        height: 100%;
+        flex: 1;           /* fill available height */
+        min-height: 0;     /* allow shrinking */
+        overflow: hidden;
     }
 
     .dash-nav img[src*="fsh_logo"] {
-        width: 35px;
-        height: 35px;
+        width: 50px;
+        height: 50px;
         object-fit: contain;
-        margin-bottom: 4px;
+        margin-bottom: 15px;
+        flex-shrink: 0;
         content: url('../public/fsh_logo_colored.png');
     }
 
@@ -338,16 +343,17 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
+        gap: 12px;
         width: 100%;
         margin-top: auto;
-        padding-top: 8px;
-        padding-bottom: 8px;
+        padding-top: 15px;
+        padding-bottom: 5px;
         border-top: 1px solid var(--hover-bg);
+        flex-shrink: 0;    /* never compress nav-right out of view */
     }
 
     #user-display {
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 500;
         text-align: center;
         word-break: break-word;
@@ -355,8 +361,8 @@
     }
 
     .profile-link {
-        width: 32px;
-        height: 32px;
+        width: 45px;
+        height: 45px;
     }
 
     .dashboard-container {
