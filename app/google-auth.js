@@ -97,8 +97,12 @@ function renderGoogleButtons(force = false) {
 
     // Use the buttonDiv container width, capped at Google's max of 400px
     const refEl = buttonDivLogin || buttonDivSignup;
+    // Force a layout reflow before measuring to get accurate width
+    document.body.offsetHeight;
     const measured = refEl ? Math.floor(refEl.getBoundingClientRect().width) : 0;
-    const containerWidth = Math.min(measured > 0 ? measured : 400, 400);
+    // Use window width as fallback for mobile, cap at Google's max of 400px
+    const fallbackWidth = Math.min(window.innerWidth - 80, 400);
+    const containerWidth = Math.min(measured > 20 ? measured : fallbackWidth, 400);
 
     const buttonConfig = {
         theme: theme,
@@ -135,6 +139,16 @@ window.onload = function () {
 
     // 2. Render once layout is painted to get correct container width
     requestAnimationFrame(() => setTimeout(renderGoogleButtons, 100));
+
+    // Also re-render if container size changes (e.g. view switches, orientation changes)
+    const refEl = document.getElementById('buttonDiv-login') || document.getElementById('buttonDiv-signup');
+    if (refEl && window.ResizeObserver) {
+        const ro = new ResizeObserver(() => {
+            buttonsRendered = false;
+            renderGoogleButtons(true);
+        });
+        ro.observe(refEl.parentElement || document.body);
+    }
 
     // Re-render only when theme is toggled (force = true resets the flag)
     document.addEventListener('click', function (e) {

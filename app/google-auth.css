@@ -1,0 +1,24 @@
+/* ============================================================================
+   GOOGLE SIGN-IN BUTTON - RESPONSIVE CONTAINER
+   ============================================================================ */
+
+#buttonDiv-login,
+#buttonDiv-signup {
+    width: 100%;
+    max-width: 320px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+/* Ensure the iframe Google renders fits its container */
+#buttonDiv-login iframe,
+#buttonDiv-signup iframe {
+    max-width: 100% !important;
+}
+
+@media screen and (max-width: 480px) {
+    #buttonDiv-login,
+    #buttonDiv-signup {
+        max-width: 100%;
+    }
+}
