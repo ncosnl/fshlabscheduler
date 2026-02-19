@@ -115,10 +115,8 @@ function renderGoogleButtons(force = false) {
 // Exposed so ui.js can trigger a fresh render when switching to signup view
 window.rerenderGoogleButtons = function() {
     buttonsRendered = false;
-    // Render immediately with best guess, then correct after paint
-    renderGoogleButtons(true);
-    buttonsRendered = false;
-    setTimeout(() => renderGoogleButtons(true), 150);
+    // Wait for the view to fully paint before measuring
+    requestAnimationFrame(() => requestAnimationFrame(() => renderGoogleButtons(true)));
 };
 
 window.onload = function () {
@@ -133,12 +131,16 @@ window.onload = function () {
     // Render once layout is painted
     requestAnimationFrame(() => setTimeout(renderGoogleButtons, 100));
 
-    // Re-render if container size changes
+    // Re-render if container size changes, but debounce to avoid iframe-insertion loops
     const refEl = document.getElementById('buttonDiv-login') || document.getElementById('buttonDiv-signup');
     if (refEl && window.ResizeObserver) {
+        let roTimer = null;
         const ro = new ResizeObserver(() => {
-            buttonsRendered = false;
-            renderGoogleButtons(true);
+            clearTimeout(roTimer);
+            roTimer = setTimeout(() => {
+                buttonsRendered = false;
+                renderGoogleButtons(true);
+            }, 300);
         });
         ro.observe(refEl.parentElement || document.body);
     }
