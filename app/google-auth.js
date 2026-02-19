@@ -97,30 +97,27 @@ function renderGoogleButtons(force = false) {
 
     // Use the buttonDiv container width, capped at Google's max of 400px
     const refEl = buttonDivLogin || buttonDivSignup;
-    // Force a layout reflow before measuring to get accurate width
-    document.body.offsetHeight;
     const measured = refEl ? Math.floor(refEl.getBoundingClientRect().width) : 0;
-    // Use window width as fallback for mobile, cap at Google's max of 400px
-    const fallbackWidth = Math.min(window.innerWidth - 80, 400);
-    const containerWidth = Math.min(measured > 20 ? measured : fallbackWidth, 400);
+    const containerWidth = Math.min(measured > 0 ? measured : 400, 400);
 
-    const baseConfig = {
+    const buttonConfig = {
         theme: theme,
         size: "large",
         shape: "pill",
         type: "standard",
+        text: "signin_with",
         logo_alignment: "left",
         width: containerWidth
     };
 
     if (buttonDivLogin) {
         buttonDivLogin.innerHTML = '';
-        google.accounts.id.renderButton(buttonDivLogin, { ...baseConfig, text: "signin_with" });
+        google.accounts.id.renderButton(buttonDivLogin, { ...buttonConfig });
     }
 
     if (buttonDivSignup) {
         buttonDivSignup.innerHTML = '';
-        google.accounts.id.renderButton(buttonDivSignup, { ...baseConfig, text: "signup_with" });
+        google.accounts.id.renderButton(buttonDivSignup, { ...buttonConfig });
     }
 
     buttonsRendered = true;
@@ -132,21 +129,12 @@ window.onload = function () {
     // 1. Initialize
     google.accounts.id.initialize({
         client_id: "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com",
-        callback: handleCredentialResponse
+        callback: handleCredentialResponse,
+        hosted_domain: "firstasia.edu.ph"
     });
 
     // 2. Render once layout is painted to get correct container width
     requestAnimationFrame(() => setTimeout(renderGoogleButtons, 100));
-
-    // Also re-render if container size changes (e.g. view switches, orientation changes)
-    const refEl = document.getElementById('buttonDiv-login') || document.getElementById('buttonDiv-signup');
-    if (refEl && window.ResizeObserver) {
-        const ro = new ResizeObserver(() => {
-            buttonsRendered = false;
-            renderGoogleButtons(true);
-        });
-        ro.observe(refEl.parentElement || document.body);
-    }
 
     // Re-render only when theme is toggled (force = true resets the flag)
     document.addEventListener('click', function (e) {
