@@ -157,4 +157,10 @@ window.onload = function () {
             setTimeout(() => renderGoogleButtons(true), 50);
         }
     });
+
+    // Exposed so other scripts (e.g. ui.js) can trigger a fresh render
+    window.rerenderGoogleButtons = function() {
+        buttonsRendered = false;
+        setTimeout(() => renderGoogleButtons(true), 50);
+    };
 };
