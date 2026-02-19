@@ -295,66 +295,91 @@
     visibility: visible;
 }
 
-/* Desktop styles - Collapsible Sidebar */
+/* ============================================================================
+   UNIFIED SIDEBAR — same behaviour on ALL screen sizes.
+   Always slides in from the left. Never pushes content.
+   Hamburger and mail button positioning unchanged from original.
+   ============================================================================ */
+
+.dash-nav {
+    position: fixed;
+    top: 0;
+    left: -260px;
+    width: 240px;
+    height: 100vh;
+    background-color: var(--nav-bg);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    transition: left 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dash-nav.active {
+    left: 0;
+}
+
+.dash-nav nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 30px 15px 20px;
+    gap: 0;
+    overflow: hidden;
+}
+
+.dash-nav img[src*="fsh_logo"] {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    content: url('../public/fsh_logo_colored.png');
+}
+
+/* nav-right pushed to bottom; scrollable on very short screens */
+.nav-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 20px;
+    padding-bottom: 10px;
+    border-top: 1px solid var(--hover-bg);
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+#user-display {
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    word-break: break-word;
+    color: var(--text-color);
+}
+
+.profile-link {
+    width: 45px;
+    height: 45px;
+}
+
+/* Hamburger positioning — kept as original per-breakpoint rules */
 @media (min-width: 769px) {
-    .dash-nav {
-        position: fixed;
-        top: 0;
-        left: -220px;
-        width: 220px;
-        height: 100vh;
-        background-color: var(--nav-bg);
-        box-shadow: 2px 0 10px var(--shadow);
-        z-index: 1000;
-        padding: 30px 15px;
-        transition: left 0.3s ease;
+    .menu-toggle {
+        position: absolute;
+        top: 45px;
+        left: 60px;
     }
 
-    .dash-nav.active {
-        left: 0;
-    }
-
-    .dash-nav nav {
-        position: static;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 25px;
-        padding: 0;
-        height: 100%;
-    }
-
-    .dash-nav img[src*="fsh_logo"] {
-        width: 50px;
-        height: 50px;
-        object-fit: contain;
-        margin-bottom: 15px;
-        content: url('../public/fsh_logo_colored.png');
-    }
-
-    .nav-right {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-        margin-top: auto;
-        padding-top: 25px;
-        border-top: 1px solid var(--hover-bg);
-    }
-
-    #user-display {
-        font-size: 13px;
-        font-weight: 500;
-        text-align: center;
-        word-break: break-word;
-        color: var(--text-color);
-    }
-
-    .profile-link {
-        width: 45px;
-        height: 45px;
+    .mail-button {
+        position: absolute;
+        top: 45px;
+        right: 60px;
     }
 
     .dashboard-container {
@@ -363,12 +388,12 @@
     }
 
     .profile-header,
-    .lab-header {
+    .lab-header,
+    .mail-header {
         margin-left: 0;
     }
 }
 
-/* Mobile styles */
 @media (max-width: 768px) {
     .menu-toggle {
         position: absolute;
@@ -397,70 +422,10 @@
         background: var(--hover-bg);
         border-color: var(--text-color);
     }
-    
-    /* Align mail button with hamburger menu in mobile */
+
     .mail-button {
         top: 20px;
         right: 20px;
-    }
-    
-    .dash-nav {
-        background-color: var(--nav-bg);
-        position: fixed;
-        top: -100%;
-        left: 0;
-        width: 100%;
-        height: auto;
-        max-height: 40vh;
-        z-index: 1000;
-        padding: 40px 5% 30px 5%;
-        box-shadow: 0 4px 20px var(--shadow);
-        transition: top 0.3s ease;
-        overflow-y: auto;
-    }
-
-    .dash-nav.active {
-        top: 0;
-    }
-
-    .dash-nav nav {
-        position: static;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0;
-        gap: 20px;
-    }
-
-    .dash-nav img[src*="fsh_logo"] {
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-        margin-bottom: 5px;
-        content: url('../public/fsh_logo_colored.png');
-    }
-
-    .nav-right {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        padding-top: 15px;
-        border-top: 1px solid var(--hover-bg);
-    }
-
-    #user-display {
-        font-size: 14px;
-        font-weight: 500;
-        text-align: center;
-        color: var(--text-color);
-    }
-
-    .profile-link {
-        width: 40px;
-        height: 40px;
     }
 
     .dashboard-container {
