@@ -221,12 +221,12 @@ async function openMessage(notificationId) {
         }
     }
 
-    // Edit button for teachers on their own pending/approved reservations
+    // Edit button for teachers on their own pending/approved reservations.
+    // Teachers only receive notifications about their own reservations, so no
+    // extra email ownership check is needed beyond the role check.
     const isTeacher = !isAdmin;
-    const userEmail = localStorage.getItem('fsh_user_email');
     const canTeacherEdit = isTeacher && notif.reservationId &&
-        (notif.status === 'pending' || notif.status === 'approved') &&
-        notif.from === userEmail;
+        (notif.status === 'pending' || notif.status === 'approved');
 
     const editBtn = canTeacherEdit ? `
         <div class="message-actions">
