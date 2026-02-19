@@ -300,13 +300,13 @@
     .dash-nav {
         position: fixed;
         top: 0;
-        left: -180px;
-        width: 180px;
+        left: -220px;
+        width: 220px;
         height: 100vh;
         background-color: var(--nav-bg);
         box-shadow: 2px 0 10px var(--shadow);
         z-index: 1000;
-        padding: 20px 12px 12px;
+        padding: 12px 15px 8px;
         transition: left 0.3s ease;
         overflow-y: auto;
     }
@@ -321,16 +321,16 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
         padding: 0;
         height: 100%;
     }
 
     .dash-nav img[src*="fsh_logo"] {
-        width: 40px;
-        height: 40px;
+        width: 35px;
+        height: 35px;
         object-fit: contain;
-        margin-bottom: 5px;
+        margin-bottom: 4px;
         content: url('../public/fsh_logo_colored.png');
     }
 
@@ -338,10 +338,10 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         width: 100%;
         margin-top: auto;
-        padding-top: 12px;
+        padding-top: 8px;
         padding-bottom: 8px;
         border-top: 1px solid var(--hover-bg);
     }
@@ -355,8 +355,8 @@
     }
 
     .profile-link {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
     }
 
     .dashboard-container {
