@@ -362,25 +362,41 @@ function openEditModal(reservationId) {
 
     const modal = document.createElement('div');
     modal.id = 'edit-reservation-modal';
-    modal.className = 'modal';
-    modal.style.display = 'flex';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); z-index: 2000;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px; box-sizing: border-box;
+    `;
 
     modal.innerHTML = `
-        <div class="modal-content" style="max-width:520px; width:90%;">
-            <div class="modal-header">
-                <h2><i class="fas fa-edit" style="margin-right:8px;"></i>Edit Reservation</h2>
-                <button class="modal-close" onclick="closeEditModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div style="
+            background: var(--card-bg); border-radius: 20px; width: 100%;
+            max-width: 500px; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: slideUp 0.3s ease;
+        ">
+            <div style="
+                background: linear-gradient(135deg, #081316 0%, #2a3a3f 100%);
+                padding: 20px 25px; border-radius: 20px 20px 0 0;
+                display: flex; justify-content: space-between; align-items: center;
+            ">
+                <h2 style="color:white; margin:0; font-size:1.2rem;">
+                    <i class="fas fa-edit" style="margin-right:8px;"></i>Edit Reservation
+                </h2>
+                <button onclick="closeEditModal()" style="
+                    background: rgba(255,255,255,0.15); border: none; color: white;
+                    width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+                    font-size: 16px; display: flex; align-items: center; justify-content: center;
+                "><i class="fas fa-times"></i></button>
             </div>
-            <form id="edit-reservation-form" class="modal-form">
+            <form id="edit-reservation-form" style="padding: 25px; display:flex; flex-direction:column; gap:16px;">
                 <div class="form-group">
-                    <label>Date</label>
+                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Date</label>
                     <input type="date" id="edit-date" class="login-input" value="${r.date}" required
                         min="${new Date().toISOString().split('T')[0]}">
                 </div>
                 <div class="form-group">
-                    <label>Time Slot</label>
+                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Time Slot</label>
                     <select id="edit-timeslot" class="login-input" required>
                         ${TIME_SLOTS.map(slot => `
                             <option value="${slot}" ${slot === r.timeSlot ? 'selected' : ''}>${slot}</option>
@@ -388,12 +404,12 @@ function openEditModal(reservationId) {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Teacher's Name</label>
+                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Teacher's Name</label>
                     <input type="text" id="edit-teacher-name" class="login-input"
                         value="${r.teacherName || ''}" required placeholder="Enter your full name">
                 </div>
                 <div class="form-group">
-                    <label>Subject</label>
+                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Subject</label>
                     <select id="edit-subject" class="login-input" required>
                         <option value="">Select subject</option>
                         ${['General Biology','Physics','Chemistry','ETECH'].map(s =>
@@ -402,7 +418,7 @@ function openEditModal(reservationId) {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Grade Level</label>
+                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Grade Level</label>
                     <select id="edit-grade" class="login-input" required>
                         <option value="">Select grade level</option>
                         <option value="11" ${r.grade == '11' ? 'selected' : ''}>Grade 11</option>
@@ -410,20 +426,32 @@ function openEditModal(reservationId) {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Number of Students</label>
+                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Number of Students</label>
                     <input type="number" id="edit-students" class="login-input"
                         value="${r.students}" required min="1" max="50">
                 </div>
                 <div class="form-group">
-                    <label>Purpose / Activity</label>
+                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Purpose / Activity</label>
                     <textarea id="edit-purpose" class="login-input" required
-                        style="min-height:80px; resize:vertical;">${r.purpose}</textarea>
+                        style="min-height:80px; resize:vertical; font-family:inherit;">${r.purpose}</textarea>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="cancel-btn" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" class="submit-btn" id="edit-submit-btn">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
+                ${r.status === 'approved' ? `
+                <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:10px; padding:12px; font-size:13px; color:#92400e; display:flex; gap:8px; align-items:center;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Editing an approved reservation will reset it to <strong>pending</strong> and require re-approval.
+                </div>` : ''}
+                <div style="display:flex; gap:12px; margin-top:4px;">
+                    <button type="button" onclick="closeEditModal()" style="
+                        flex:1; padding:12px; border-radius:50px; cursor:pointer;
+                        background:var(--bg-color); color:var(--secondary-text);
+                        border:1px solid var(--secondary-text); font-size:14px; font-weight:500;
+                    ">Cancel</button>
+                    <button type="submit" id="edit-submit-btn" style="
+                        flex:1; padding:12px; border-radius:50px; cursor:pointer;
+                        background:#081316; color:white; border:none;
+                        font-size:14px; font-weight:500; display:flex;
+                        align-items:center; justify-content:center; gap:8px;
+                    "><i class="fas fa-save"></i> Save Changes</button>
                 </div>
             </form>
         </div>
