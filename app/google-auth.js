@@ -115,7 +115,10 @@ function renderGoogleButtons(force = false) {
 // Exposed so ui.js can trigger a fresh render when switching to signup view
 window.rerenderGoogleButtons = function() {
     buttonsRendered = false;
-    setTimeout(() => renderGoogleButtons(true), 50);
+    // Render immediately with best guess, then correct after paint
+    renderGoogleButtons(true);
+    buttonsRendered = false;
+    setTimeout(() => renderGoogleButtons(true), 150);
 };
 
 window.onload = function () {
