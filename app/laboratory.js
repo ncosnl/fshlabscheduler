@@ -373,7 +373,7 @@ function openEditModal(reservationId) {
         <div style="
             background: var(--card-bg); border-radius: 20px; width: 100%;
             max-width: 480px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            overflow: hidden; margin: auto;
+            overflow-y: auto; max-height: 90vh; margin: auto;
         ">
             <div style="
                 background: linear-gradient(135deg, #081316 0%, #2a3a3f 100%);
@@ -432,9 +432,9 @@ function openEditModal(reservationId) {
                 </div>
                 ${r.status === 'approved' ? `
                 <div style="background:rgba(245,158,11,0.1); border:1px solid #f59e0b; border-radius:10px;
-                    padding:10px 14px; font-size:13px; color:#b45309; display:flex; gap:8px; align-items:center;">
-                    <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
-                    Saving will reset this reservation to <strong>&nbsp;pending&nbsp;</strong> and require re-approval.
+                    padding:10px 14px; font-size:13px; color:#b45309; display:flex; gap:8px; align-items:flex-start;">
+                    <i class="fas fa-exclamation-triangle" style="flex-shrink:0; margin-top:2px;"></i>
+                    <span>Saving will reset this reservation to <strong>pending</strong> status and require admin re-approval.</span>
                 </div>` : ''}
                 <div style="display:flex; gap:10px; padding-top:4px;">
                     <button type="button" onclick="closeEditModal()" style="
