@@ -256,7 +256,7 @@ async function handleReservationSubmit(e) {
         renderCalendar();
 
     } catch (err) {
-        alert('Could not reach the server. Please try again.');
+        alert('Error: ' + (err.message || 'Could not reach the server.'));
         console.error(err);
     } finally {
         if (submitBtn) {
@@ -431,7 +431,7 @@ function openEditModal(reservationId) {
                     <textarea id="edit-purpose" class="login-input" required style="margin:0; min-height:80px; resize:vertical; font-family:inherit;">${r.purpose}</textarea>
                 </div>
                 ${r.status === 'approved' ? `
-                <div style="background:rgba(245,158,11,0.08); border-left:4px solid #f59e0b; border-radius:0 4px 4px 0;
+                <div style="background:rgba(245,158,11,0.1); border:1px solid #f59e0b; border-radius:10px;
                     padding:10px 14px; font-size:13px; color:#b45309; display:flex; gap:8px; align-items:flex-start;">
                     <i class="fas fa-exclamation-triangle" style="flex-shrink:0; margin-top:2px;"></i>
                     <span>Saving will reset this reservation to <strong>pending</strong> status and require admin re-approval.</span>
@@ -459,104 +459,6 @@ function openEditModal(reservationId) {
         handleEditSubmit(e, reservationId);
     });
 }
-
-    modal.innerHTML = `
-        <div style="
-            background: var(--card-bg); border-radius: 20px; width: 100%;
-            max-width: 500px; max-height: 90vh; overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: slideUp 0.3s ease;
-        ">
-            <div style="
-                background: linear-gradient(135deg, #081316 0%, #2a3a3f 100%);
-                padding: 20px 25px; border-radius: 20px 20px 0 0;
-                display: flex; justify-content: space-between; align-items: center;
-            ">
-                <h2 style="color:white; margin:0; font-size:1.2rem;">
-                    <i class="fas fa-edit" style="margin-right:8px;"></i>Edit Reservation
-                </h2>
-                <button onclick="closeEditModal()" style="
-                    background: rgba(255,255,255,0.15); border: none; color: white;
-                    width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-                    font-size: 16px; display: flex; align-items: center; justify-content: center;
-                "><i class="fas fa-times"></i></button>
-            </div>
-            <form id="edit-reservation-form" style="padding: 25px; display:flex; flex-direction:column; gap:16px;">
-                <div class="form-group">
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Date</label>
-                    <input type="date" id="edit-date" class="login-input" value="${r.date}" required
-                        min="${new Date().toISOString().split('T')[0]}">
-                </div>
-                <div class="form-group">
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Time Slot</label>
-                    <select id="edit-timeslot" class="login-input" required>
-                        ${TIME_SLOTS.map(slot => `
-                            <option value="${slot}" ${slot === r.timeSlot ? 'selected' : ''}>${slot}</option>
-                        `).join('')}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Teacher's Name</label>
-                    <input type="text" id="edit-teacher-name" class="login-input"
-                        value="${r.teacherName || ''}" required placeholder="Enter your full name">
-                </div>
-                <div class="form-group">
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Subject</label>
-                    <select id="edit-subject" class="login-input" required>
-                        <option value="">Select subject</option>
-                        ${['General Biology','Physics','Chemistry','ETECH'].map(s =>
-                            `<option value="${s}" ${s === r.subject ? 'selected' : ''}>${s}</option>`
-                        ).join('')}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Grade Level</label>
-                    <select id="edit-grade" class="login-input" required>
-                        <option value="">Select grade level</option>
-                        <option value="11" ${r.grade == '11' ? 'selected' : ''}>Grade 11</option>
-                        <option value="12" ${r.grade == '12' ? 'selected' : ''}>Grade 12</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Number of Students</label>
-                    <input type="number" id="edit-students" class="login-input"
-                        value="${r.students}" required min="1" max="50">
-                </div>
-                <div class="form-group">
-                    <label style="font-weight:500; color:var(--text-color); display:block; margin-bottom:6px;">Purpose / Activity</label>
-                    <textarea id="edit-purpose" class="login-input" required
-                        style="min-height:80px; resize:vertical; font-family:inherit;">${r.purpose}</textarea>
-                </div>
-                ${r.status === 'approved' ? `
-                <div style="background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 4px 4px 0; padding:12px 14px; font-size:13px; color:#92400e; display:flex; gap:8px; align-items:center;">
-                    <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
-                    Editing an approved reservation will reset it to <strong>pending</strong> and require re-approval.
-                </div>` : ''}
-                <div style="display:flex; gap:12px; margin-top:4px;">
-                    <button type="button" onclick="closeEditModal()" style="
-                        flex:1; padding:12px; border-radius:50px; cursor:pointer;
-                        background:var(--bg-color); color:var(--secondary-text);
-                        border:1px solid var(--secondary-text); font-size:14px; font-weight:500;
-                    ">Cancel</button>
-                    <button type="submit" id="edit-submit-btn" style="
-                        flex:1; padding:12px; border-radius:50px; cursor:pointer;
-                        background:#081316; color:white; border:none;
-                        font-size:14px; font-weight:500; display:flex;
-                        align-items:center; justify-content:center; gap:8px;
-                    "><i class="fas fa-save"></i> Save Changes</button>
-                </div>
-            </form>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Close on backdrop click
-    modal.addEventListener('click', e => { if (e.target === modal) closeEditModal(); });
-
-    // Handle submit
-    document.getElementById('edit-reservation-form').addEventListener('submit', e => {
-        handleEditSubmit(e, reservationId);
-    });
 
 function closeEditModal() {
     document.getElementById('edit-reservation-modal')?.remove();
@@ -587,7 +489,7 @@ async function handleEditSubmit(e, reservationId) {
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
 
     try {
-        const data = await apiCall(`/api/reservations/${reservationId}`, 'PUT', {
+        const data = await apiCall(`/api/reservations/${reservationId}`, 'PATCH', {
             date:        newDate,
             timeSlot:    newTimeSlot,
             teacherName: document.getElementById('edit-teacher-name').value,
@@ -611,7 +513,7 @@ async function handleEditSubmit(e, reservationId) {
         alert('✅ Reservation updated successfully!\n\nYour reservation has been resubmitted for admin approval.');
 
     } catch (err) {
-        alert('Could not reach the server. Please try again.');
+        alert('Error: ' + (err.message || 'Could not reach the server.'));
         console.error(err);
     } finally {
         if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes'; }
@@ -747,7 +649,7 @@ async function approveReservation(id) {
         renderCalendar();
         alert('✅ Reservation approved! The teacher has been notified.');
     } catch (err) {
-        alert('Could not reach the server. Please try again.');
+        alert('Error: ' + (err.message || 'Could not reach the server.'));
         console.error(err);
     }
 }
@@ -764,7 +666,7 @@ async function declineReservation(id) {
         renderCalendar();
         alert('❌ Reservation declined. The teacher has been notified.');
     } catch (err) {
-        alert('Could not reach the server. Please try again.');
+        alert('Error: ' + (err.message || 'Could not reach the server.'));
         console.error(err);
     }
 }

@@ -23,13 +23,7 @@ async function mailApiCall(endpoint, method = 'GET', body = null) {
     const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
     const res = await fetch(`${MAIL_API_BASE}${endpoint}`, options);
-    const text = await res.text();
-    try {
-        return JSON.parse(text);
-    } catch {
-        console.error('Non-JSON response:', res.status, text);
-        throw new Error(`Server error ${res.status}: ${text.slice(0, 100)}`);
-    }
+    return res.json();
 }
 
 // ============================================================================
@@ -516,7 +510,7 @@ async function openEditModalFromMail(reservationId, labName) {
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
 
         try {
-            const data = await mailApiCall(`/api/reservations/${reservationId}`, 'PUT', {
+            const data = await mailApiCall(`/api/reservations/${reservationId}`, 'PATCH', {
                 date:        document.getElementById('mail-edit-date').value,
                 timeSlot:    document.getElementById('mail-edit-timeslot').value,
                 teacherName: document.getElementById('mail-edit-teacher').value,
@@ -533,7 +527,7 @@ async function openEditModalFromMail(reservationId, labName) {
             await loadMessages();
             alert('✅ Reservation updated and resubmitted for approval!');
         } catch (err) {
-            alert('Error: ' + (err.message || 'Could not reach the server. Please try again.'));
+            alert('Could not reach the server. Please try again.');
             console.error(err);
         } finally {
             if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes'; }
