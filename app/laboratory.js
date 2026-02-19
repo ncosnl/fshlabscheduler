@@ -431,7 +431,7 @@ function openEditModal(reservationId) {
                     <textarea id="edit-purpose" class="login-input" required style="margin:0; min-height:80px; resize:vertical; font-family:inherit;">${r.purpose}</textarea>
                 </div>
                 ${r.status === 'approved' ? `
-                <div style="background:rgba(245,158,11,0.1); border:1px solid #f59e0b; border-radius:10px;
+                <div style="background:rgba(245,158,11,0.08); border-left:4px solid #f59e0b; border-radius:0 4px 4px 0;
                     padding:10px 14px; font-size:13px; color:#b45309; display:flex; gap:8px; align-items:flex-start;">
                     <i class="fas fa-exclamation-triangle" style="flex-shrink:0; margin-top:2px;"></i>
                     <span>Saving will reset this reservation to <strong>pending</strong> status and require admin re-approval.</span>
@@ -527,8 +527,8 @@ function openEditModal(reservationId) {
                         style="min-height:80px; resize:vertical; font-family:inherit;">${r.purpose}</textarea>
                 </div>
                 ${r.status === 'approved' ? `
-                <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:10px; padding:12px; font-size:13px; color:#92400e; display:flex; gap:8px; align-items:center;">
-                    <i class="fas fa-exclamation-triangle"></i>
+                <div style="background:#fef3c7; border-left:4px solid #f59e0b; border-radius:0 4px 4px 0; padding:12px 14px; font-size:13px; color:#92400e; display:flex; gap:8px; align-items:center;">
+                    <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
                     Editing an approved reservation will reset it to <strong>pending</strong> and require re-approval.
                 </div>` : ''}
                 <div style="display:flex; gap:12px; margin-top:4px;">
