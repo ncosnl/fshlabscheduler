@@ -23,7 +23,13 @@ async function mailApiCall(endpoint, method = 'GET', body = null) {
     const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
     const res = await fetch(`${MAIL_API_BASE}${endpoint}`, options);
-    return res.json();
+    const text = await res.text();
+    try {
+        return JSON.parse(text);
+    } catch {
+        console.error('Non-JSON response:', res.status, text);
+        throw new Error(`Server error ${res.status}: ${text.slice(0, 100)}`);
+    }
 }
 
 // ============================================================================
@@ -527,7 +533,7 @@ async function openEditModalFromMail(reservationId, labName) {
             await loadMessages();
             alert('✅ Reservation updated and resubmitted for approval!');
         } catch (err) {
-            alert('Could not reach the server. Please try again.');
+            alert('Error: ' + (err.message || 'Could not reach the server. Please try again.'));
             console.error(err);
         } finally {
             if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes'; }
