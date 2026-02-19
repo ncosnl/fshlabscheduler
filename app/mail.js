@@ -231,12 +231,12 @@ async function openMessage(notificationId) {
     const editBtn = canTeacherEdit ? `
         <div class="message-actions" style="flex-direction:column; gap:0;">
             <button class="action-btn view-lab" onclick="openEditModalFromMail('${notif.reservationId}', '${notif.lab}')"
-                style="background:#081316; border-color:#081316; ${notif.status === 'approved' ? 'border-radius:50px 50px 0 0;' : ''}">
+                style="background:var(--text-color); color:var(--bg-color); border-color:var(--text-color); ${notif.status === 'approved' ? 'border-radius:50px 50px 0 0;' : ''}">
                 <i class="fas fa-edit"></i> Edit Reservation
             </button>
             ${notif.status === 'approved' ? `
-            <div style="background:#fef3c7; border:1px solid #f59e0b; border-top:none; border-radius:0 0 12px 12px;
-                padding:8px 14px; font-size:13px; color:#92400e; display:flex; gap:8px; align-items:center;">
+            <div style="background:rgba(245,158,11,0.15); border:1px solid #f59e0b; border-top:none; border-radius:0 0 12px 12px;
+                padding:8px 14px; font-size:13px; color:#d97706; display:flex; gap:8px; align-items:center;">
                 <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
                 Editing will reset status to <strong style="margin-left:3px;">pending</strong> and require re-approval.
             </div>` : ''}
