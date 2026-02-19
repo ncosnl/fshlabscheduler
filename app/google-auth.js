@@ -2,6 +2,10 @@
 // GOOGLE-AUTH.JS - Google Sign-In Integration
 // ============================================================================
 
+// ============================================================================
+// GOOGLE SIGN-IN HANDLER
+// ============================================================================
+
 async function handleCredentialResponse(response) {
     const responsePayload = decodeJwtResponse(response.credential);
 
@@ -54,6 +58,10 @@ async function handleCredentialResponse(response) {
     }
 }
 
+// ============================================================================
+// JWT DECODER
+// ============================================================================
+
 function decodeJwtResponse(token) {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -63,8 +71,13 @@ function decodeJwtResponse(token) {
             .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
             .join('')
     );
+
     return JSON.parse(jsonPayload);
 }
+
+// ============================================================================
+// GOOGLE BUTTON INITIALIZATION
+// ============================================================================
 
 function getGoogleButtonTheme() {
     const savedTheme = localStorage.getItem('fsh_theme') || 'light';
@@ -73,79 +86,71 @@ function getGoogleButtonTheme() {
 
 let buttonsRendered = false;
 
-function getButtonWidth(el) {
-    if (!el) return 300;
-    document.body.offsetHeight; // force reflow
-    const measured = Math.floor(el.getBoundingClientRect().width);
-    const fallback = Math.min(window.innerWidth - 80, 400);
-    return Math.min(measured > 20 ? measured : fallback, 400);
-}
-
 function renderGoogleButtons(force = false) {
     if (typeof google === 'undefined') return;
+    // Don't re-render unless forced (theme change) — this prevents the flicker
     if (buttonsRendered && !force) return;
 
     const buttonDivLogin  = document.getElementById("buttonDiv-login");
     const buttonDivSignup = document.getElementById("buttonDiv-signup");
     const theme = getGoogleButtonTheme();
 
-    const baseConfig = {
+    // Use the buttonDiv container width, capped at Google's max of 400px
+    const refEl = buttonDivLogin || buttonDivSignup;
+    // Force a layout reflow before measuring to get accurate width
+    document.body.offsetHeight;
+    const measured = refEl ? Math.floor(refEl.getBoundingClientRect().width) : 0;
+    // Use window width as fallback for mobile, cap at Google's max of 400px
+    const fallbackWidth = Math.min(window.innerWidth - 80, 400);
+    const containerWidth = Math.min(measured > 20 ? measured : fallbackWidth, 400);
+
+    const buttonConfig = {
         theme: theme,
         size: "large",
         shape: "pill",
         type: "standard",
         text: "signin_with",
         logo_alignment: "left",
+        width: containerWidth
     };
 
-    // Render each button using its own container's width
     if (buttonDivLogin) {
         buttonDivLogin.innerHTML = '';
-        google.accounts.id.renderButton(buttonDivLogin, { ...baseConfig, width: getButtonWidth(buttonDivLogin) });
+        google.accounts.id.renderButton(buttonDivLogin, { ...buttonConfig });
     }
 
     if (buttonDivSignup) {
         buttonDivSignup.innerHTML = '';
-        google.accounts.id.renderButton(buttonDivSignup, { ...baseConfig, width: getButtonWidth(buttonDivSignup) });
+        google.accounts.id.renderButton(buttonDivSignup, { ...buttonConfig });
     }
 
     buttonsRendered = true;
 }
 
-// Exposed so ui.js can trigger a fresh render when switching to signup view
-window.rerenderGoogleButtons = function() {
-    buttonsRendered = false;
-    // Wait for the view to fully paint before measuring
-    requestAnimationFrame(() => requestAnimationFrame(() => renderGoogleButtons(true)));
-};
-
 window.onload = function () {
     if (typeof google === 'undefined') return;
 
+    // 1. Initialize
     google.accounts.id.initialize({
         client_id: "238536479920-v18ac5qcfh6t0vmp8evjk381g4b6ssl4.apps.googleusercontent.com",
         callback: handleCredentialResponse,
         hosted_domain: "firstasia.edu.ph"
     });
 
-    // Render once layout is painted
+    // 2. Render once layout is painted to get correct container width
     requestAnimationFrame(() => setTimeout(renderGoogleButtons, 100));
 
-    // Re-render if container size changes, but debounce to avoid iframe-insertion loops
+    // Also re-render if container size changes (e.g. view switches, orientation changes)
     const refEl = document.getElementById('buttonDiv-login') || document.getElementById('buttonDiv-signup');
     if (refEl && window.ResizeObserver) {
-        let roTimer = null;
         const ro = new ResizeObserver(() => {
-            clearTimeout(roTimer);
-            roTimer = setTimeout(() => {
-                buttonsRendered = false;
-                renderGoogleButtons(true);
-            }, 300);
+            buttonsRendered = false;
+            renderGoogleButtons(true);
         });
         ro.observe(refEl.parentElement || document.body);
     }
 
-    // Re-render when theme is toggled
+    // Re-render only when theme is toggled (force = true resets the flag)
     document.addEventListener('click', function (e) {
         if (e.target.closest('.theme-toggle')) {
             buttonsRendered = false;

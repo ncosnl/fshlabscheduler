@@ -47,11 +47,6 @@ function showSignup() {
     
     clearPasswordField('login-password');
     showView('signup-view');
-
-    // Re-render Google button now that signup view is visible
-    if (typeof window.rerenderGoogleButtons === 'function') {
-        window.rerenderGoogleButtons();
-    }
 }
 
 function showLoginFromSignup() {
