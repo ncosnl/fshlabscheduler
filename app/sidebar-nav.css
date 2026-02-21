@@ -426,7 +426,7 @@
         width: 100%;
         height: auto;
         z-index: 1000;
-        padding: 50px 5% 20px 5%;
+        padding: 40px 5% 8px 5%;
         box-shadow: 0 4px 20px var(--shadow);
         transition: top 0.3s ease;
         overflow-y: auto;
