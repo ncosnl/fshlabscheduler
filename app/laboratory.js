@@ -313,7 +313,7 @@ function renderMyReservations() {
         const item = document.createElement('div');
         item.style.cssText = `
             background: var(--hover-bg); border-radius: 12px; padding: 16px;
-            margin-bottom: 12px; border-left: 4px solid ${statusColor};
+            margin-bottom: 12px; border-left: 4px solid ${statusColor}; overflow: hidden;
         `;
         item.innerHTML = `
             <div style="display:flex; flex-direction:column; gap:10px;">
@@ -331,20 +331,20 @@ function renderMyReservations() {
                         <i class="fas fa-users" style="margin-right:6px;"></i>${r.students} students
                     </p>
                 </div>
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span style="padding:4px 12px; border-radius:20px; font-size:11px; font-weight:600;
-                            background:${statusColor}; color:white; text-transform:uppercase;">${r.status}</span>
-                        ${canEdit && r.status === 'approved' ? `
-                        <span style="font-size:11px; color:var(--secondary-text); line-height:1.3;">Will require re-approval</span>` : ''}
-                    </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0;">
+                    <span style="padding:4px 12px; border-radius:20px; font-size:11px; font-weight:600;
+                        background:${statusColor}; color:white; text-transform:uppercase; flex-shrink:0;">${r.status}</span>
                     ${canEdit ? `
-                        <button onclick="openEditModal('${r.id}')" style="
-                            background:#081316; color:white; border:none; border-radius:20px;
-                            padding:6px 14px; font-size:12px; cursor:pointer; display:flex;
-                            align-items:center; gap:6px; transition:all 0.2s; flex-shrink:0;">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                            ${r.status === 'approved' ? `
+                            <span style="font-size:11px; color:var(--secondary-text); line-height:1.3; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Will require re-approval</span>` : ''}
+                            <button onclick="openEditModal('${r.id}')" style="
+                                background:#081316; color:white; border:none; border-radius:20px;
+                                padding:6px 14px; font-size:12px; cursor:pointer; display:flex;
+                                align-items:center; gap:6px; transition:all 0.2s; flex-shrink:0;">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </div>
                     ` : ''}
                 </div>
             </div>
