@@ -29,14 +29,10 @@
     --icon-inner: #2a2a2a;
 }
 
-/* Inline SVG icons — currentColor = dark in light mode, white in dark mode */
+/* Inline SVG icons — match hamburger menu aesthetic */
 .nav-icon {
-    color: #081316;
+    color: var(--text-color);
     display: block;
-}
-
-[data-theme="dark"] .nav-icon {
-    color: #ffffff;
 }
 
 /* Profile section with label */
@@ -51,13 +47,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    background: transparent;
+    border: 3px solid var(--text-color);
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    padding: 8px;
     transition: all 0.3s ease;
     cursor: pointer;
 }
 
 .profile-link:hover {
-    transform: scale(1.1);
+    background: var(--hover-bg);
+    transform: scale(1.05);
 }
 
 .profile-link img {
@@ -80,28 +82,23 @@
     right: 60px;
     z-index: 98;
     background: transparent;
-    border: none;
-    width: 50px;
-    height: 50px;
+    border: 3px solid var(--text-color);
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    padding: 0;
-}
-
-[data-theme="dark"] .mail-button {
-    background: transparent;
+    padding: 8px;
 }
 
 .mail-button:hover {
-    transform: scale(1.1);
-}
-
-[data-theme="dark"] .mail-button:hover {
-    transform: scale(1.1);
+    background: var(--hover-bg);
+    transform: scale(1.05);
+    border-color: var(--text-color);
 }
 
 .mail-button img {
@@ -111,10 +108,6 @@
 }
 
 .mail-button i {
-    display: none;
-}
-
-[data-theme="dark"] .mail-button i {
     display: none;
 }
 
@@ -247,6 +240,35 @@
     body[data-page="laboratory"] .menu-toggle:hover,
     body[data-page="mail"] .menu-toggle:hover,
     body[data-page="profile"] .menu-toggle:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: white;
+    }
+
+    /* Mail button and profile link also go white on dark-header pages */
+    body[data-page="laboratory"] .mail-button,
+    body[data-page="mail"] .mail-button,
+    body[data-page="profile"] .mail-button,
+    body[data-page="laboratory"] .profile-link,
+    body[data-page="mail"] .profile-link,
+    body[data-page="profile"] .profile-link {
+        border-color: white;
+    }
+
+    body[data-page="laboratory"] .mail-button .nav-icon,
+    body[data-page="mail"] .mail-button .nav-icon,
+    body[data-page="profile"] .mail-button .nav-icon,
+    body[data-page="laboratory"] .profile-link .nav-icon,
+    body[data-page="mail"] .profile-link .nav-icon,
+    body[data-page="profile"] .profile-link .nav-icon {
+        color: white;
+    }
+
+    body[data-page="laboratory"] .mail-button:hover,
+    body[data-page="mail"] .mail-button:hover,
+    body[data-page="profile"] .mail-button:hover,
+    body[data-page="laboratory"] .profile-link:hover,
+    body[data-page="mail"] .profile-link:hover,
+    body[data-page="profile"] .profile-link:hover {
         background: rgba(255, 255, 255, 0.1);
         border-color: white;
     }
