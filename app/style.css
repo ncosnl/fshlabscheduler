@@ -422,6 +422,14 @@ nav img[src*="fsh_logo"] {
     color: var(--text-color);
 }
 
+select.login-input,
+select.login-input:hover,
+select.login-input:focus {
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
 .input-error {
     border: 2px solid #ff4d4d !important;
     background-color: #fff0f0;
@@ -960,6 +968,13 @@ nav img[src*="fsh_logo"] {
     transition: border-color 0.3s ease;
     background-color: var(--input-bg);
     color: var(--text-color);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.form-group select:hover {
+    outline: none;
 }
 
 .form-group input:focus,
