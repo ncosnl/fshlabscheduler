@@ -316,7 +316,7 @@ function renderMyReservations() {
             margin-bottom: 12px; border-left: 4px solid ${statusColor};
         `;
         item.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
                 <div>
                     <p style="font-weight:600; margin-bottom:4px; color:var(--text-color);">
                         <i class="far fa-calendar" style="margin-right:6px;"></i>${formatDate(r.date)}
@@ -331,7 +331,7 @@ function renderMyReservations() {
                         <i class="fas fa-users" style="margin-right:6px;"></i>${r.students} students
                     </p>
                 </div>
-                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                     <span style="padding:4px 12px; border-radius:20px; font-size:11px; font-weight:600;
                         background:${statusColor}; color:white; text-transform:uppercase;">${r.status}</span>
                     ${canEdit ? `
@@ -342,7 +342,7 @@ function renderMyReservations() {
                             <i class="fas fa-edit"></i> Edit
                         </button>
                         ${r.status === 'approved' ? `
-                        <span style="font-size:10px; color:var(--secondary-text); text-align:right; max-width:100px; line-height:1.3;">
+                        <span style="font-size:11px; color:var(--secondary-text); line-height:1.3;">
                             Will require re-approval
                         </span>` : ''}
                     ` : ''}
