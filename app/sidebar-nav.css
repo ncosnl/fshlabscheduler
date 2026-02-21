@@ -427,7 +427,6 @@
         height: 110px;
         z-index: 1000;
         padding: 0 5%;
-        padding-top: 44px;
         box-shadow: 0 4px 20px var(--shadow);
         transition: top 0.3s ease;
         overflow-y: auto;
@@ -448,6 +447,7 @@
         justify-content: space-between;
         padding: 0;
         gap: 15px;
+        margin-top: 44px;
     }
 
     .dash-nav img[src*="fsh_logo"] {
