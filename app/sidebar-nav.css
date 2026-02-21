@@ -306,8 +306,8 @@
     .dash-nav {
         position: fixed;
         top: 0;
-        left: -220px;
-        width: 220px;
+        left: -160px;
+        width: 160px;
         height: 100svh; /* scales to actual visible browser height */
         background-color: var(--nav-bg);
         box-shadow: 2px 0 10px var(--shadow);
@@ -425,9 +425,9 @@
         left: 0;
         width: 100%;
         height: auto;
-        max-height: 40vh;
+        max-height: 28vh;
         z-index: 1000;
-        padding: 40px 5% 30px 5%;
+        padding: 30px 5% 20px 5%;
         box-shadow: 0 4px 20px var(--shadow);
         transition: top 0.3s ease;
         overflow-y: auto;
