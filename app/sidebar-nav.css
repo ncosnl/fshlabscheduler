@@ -78,13 +78,13 @@
 /* Mail/Notifications Button - Top right corner */
 .mail-button {
     position: absolute;
-    top: 45px;
+    top: 38px;
     right: 60px;
     z-index: 98;
     background: transparent;
     border: none;
     width: 54px;
-    height: 54px;
+    height: 62px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -110,8 +110,8 @@
 
 .notification-badge {
     position: absolute;
-    top: -5px;
-    right: -5px;
+    top: 2px;
+    right: 2px;
     background: #ef4444;
     color: white;
     font-size: 10px;
