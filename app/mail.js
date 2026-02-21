@@ -300,10 +300,12 @@ async function openMessage(notificationId) {
     `;
 
     document.getElementById('message-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
 
 function closeMessageModal() {
     document.getElementById('message-modal').style.display = 'none';
+    document.body.style.overflow = '';
     currentMessageId = null;
 }
 
