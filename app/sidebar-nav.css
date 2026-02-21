@@ -13,6 +13,7 @@
     --hover-bg: #f0f0f0;
     --shadow: rgba(0, 0, 0, 0.05);
     --shadow-hover: rgba(0, 0, 0, 0.12);
+    --icon-inner: #ffffff;
 }
 
 [data-theme="dark"] {
@@ -25,6 +26,17 @@
     --hover-bg: #3a3a3a;
     --shadow: rgba(0, 0, 0, 0.3);
     --shadow-hover: rgba(0, 0, 0, 0.5);
+    --icon-inner: #2a2a2a;
+}
+
+/* Inline SVG icons — currentColor = dark in light mode, white in dark mode */
+.nav-icon {
+    color: #081316;
+    display: block;
+}
+
+[data-theme="dark"] .nav-icon {
+    color: #ffffff;
 }
 
 /* Profile section with label */
@@ -258,17 +270,9 @@
     pointer-events: none;
 }
 
-/* Dark mode glow effects for sidebar logo and profile icon */
+/* Dark mode glow effects for sidebar logo */
 [data-theme="dark"] .dash-nav img[src*="fsh_logo"] {
     filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
-}
-
-[data-theme="dark"] .profile-link img {
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
-}
-
-[data-theme="dark"] .mail-button img {
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
 }
 
 .tab-text {
