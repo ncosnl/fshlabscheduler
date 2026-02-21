@@ -372,7 +372,7 @@ function openEditModal(reservationId) {
     modal.innerHTML = `
         <div style="
             background: var(--card-bg); border-radius: 20px; width: 100%;
-            max-width: 480px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 700px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             overflow-y: auto; max-height: 90vh; margin: auto;
         ">
             <div style="
