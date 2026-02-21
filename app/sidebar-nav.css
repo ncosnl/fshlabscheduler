@@ -241,29 +241,59 @@
         border-color: white;
     }
 
-    /* Profile link also goes white on dark-header pages */
+    /* Profile link also goes white on dark-header pages, but only when sidebar is closed */
+    body[data-page="laboratory"] .dash-nav:not(.active) ~ * .profile-link,
+    body[data-page="mail"] .dash-nav:not(.active) ~ * .profile-link,
+    body[data-page="profile"] .dash-nav:not(.active) ~ * .profile-link {
+        border-color: white;
+    }
+
     body[data-page="laboratory"] .profile-link,
     body[data-page="mail"] .profile-link,
     body[data-page="profile"] .profile-link {
         border-color: white;
     }
 
+    body[data-page="laboratory"] .dash-nav.active .profile-link,
+    body[data-page="mail"] .dash-nav.active .profile-link,
+    body[data-page="profile"] .dash-nav.active .profile-link {
+        border-color: var(--text-color);
+    }
+
     body[data-page="laboratory"] .mail-button .nav-icon,
     body[data-page="mail"] .mail-button .nav-icon,
-    body[data-page="profile"] .mail-button .nav-icon,
+    body[data-page="profile"] .mail-button .nav-icon {
+        color: white;
+    }
+
     body[data-page="laboratory"] .profile-link .nav-icon,
     body[data-page="mail"] .profile-link .nav-icon,
     body[data-page="profile"] .profile-link .nav-icon {
         color: white;
     }
 
+    body[data-page="laboratory"] .dash-nav.active .profile-link .nav-icon,
+    body[data-page="mail"] .dash-nav.active .profile-link .nav-icon,
+    body[data-page="profile"] .dash-nav.active .profile-link .nav-icon {
+        color: var(--text-color);
+    }
+
     body[data-page="laboratory"] .mail-button:hover,
     body[data-page="mail"] .mail-button:hover,
-    body[data-page="profile"] .mail-button:hover,
+    body[data-page="profile"] .mail-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
     body[data-page="laboratory"] .profile-link:hover,
     body[data-page="mail"] .profile-link:hover,
     body[data-page="profile"] .profile-link:hover {
         background: rgba(255, 255, 255, 0.1);
+    }
+
+    body[data-page="laboratory"] .dash-nav.active .profile-link:hover,
+    body[data-page="mail"] .dash-nav.active .profile-link:hover,
+    body[data-page="profile"] .dash-nav.active .profile-link:hover {
+        background: var(--hover-bg);
     }
 }
 
