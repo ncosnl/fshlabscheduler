@@ -49,7 +49,7 @@
     justify-content: center;
     background: transparent;
     border: 3px solid var(--text-color);
-    border-radius: 8px;
+    border-radius: 50%;
     width: 44px;
     height: 44px;
     padding: 8px;
@@ -82,23 +82,20 @@
     right: 60px;
     z-index: 98;
     background: transparent;
-    border: 3px solid var(--text-color);
-    border-radius: 8px;
-    width: 44px;
-    height: 44px;
+    border: none;
+    width: 54px;
+    height: 54px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    padding: 8px;
+    padding: 4px;
 }
 
 .mail-button:hover {
-    background: var(--hover-bg);
     transform: scale(1.05);
-    border-color: var(--text-color);
 }
 
 .mail-button img {
@@ -244,10 +241,7 @@
         border-color: white;
     }
 
-    /* Mail button and profile link also go white on dark-header pages */
-    body[data-page="laboratory"] .mail-button,
-    body[data-page="mail"] .mail-button,
-    body[data-page="profile"] .mail-button,
+    /* Profile link also goes white on dark-header pages */
     body[data-page="laboratory"] .profile-link,
     body[data-page="mail"] .profile-link,
     body[data-page="profile"] .profile-link {
@@ -270,7 +264,6 @@
     body[data-page="mail"] .profile-link:hover,
     body[data-page="profile"] .profile-link:hover {
         background: rgba(255, 255, 255, 0.1);
-        border-color: white;
     }
 }
 
