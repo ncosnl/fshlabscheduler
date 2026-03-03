@@ -460,12 +460,12 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 15px;
+        gap: 10px;
         padding-top: 0;
         border-top: none;
-        border-left: 1px solid var(--hover-bg);
-        padding-left: 15px;
-        padding-right: 25px;
+        border-left: 2px solid var(--hover-bg);
+        padding-left: 25px;
+        padding-right: 0px;
         margin-left: auto;
     }
 
