@@ -465,7 +465,7 @@
         border-top: none;
         border-left: 2px solid var(--hover-bg);
         padding-left: 25px;
-        padding-right: 50px;
+        padding-right: 5px;
         margin-left: auto;
     }
 
