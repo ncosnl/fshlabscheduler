@@ -99,11 +99,30 @@ function initializeSidebar() {
 // ============================================================================
 
 function initializeDarkMode() {
-    // Check saved theme preference or default to light
-    const savedTheme = localStorage.getItem('fsh_theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    const savedTheme = localStorage.getItem('fsh_theme');
     
-    // Create theme toggle in nav-right sections
+    // If the user has never manually set a theme, follow the device
+    if (!savedTheme) {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else {
+        // User has a saved preference — respect it
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    
+    // Listen for device theme changes while the app is open
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        // Only auto-switch if the user hasn't manually set a preference
+        if (!localStorage.getItem('fsh_theme')) {
+            document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            // Update the toggle slider icon too
+            const sliders = document.querySelectorAll('.theme-toggle-slider i');
+            sliders.forEach(icon => {
+                icon.className = `fas ${e.matches ? 'fa-moon' : 'fa-sun'}`;
+            });
+        }
+    });
+    
     createThemeToggle();
 }
 
