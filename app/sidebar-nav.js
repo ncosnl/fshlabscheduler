@@ -99,15 +99,21 @@ function initializeSidebar() {
 // ============================================================================
 
 function initializeDarkMode() {
+    // One-time migration: clear any auto-saved theme that was never manually
+    // chosen, so the device theme takes over for existing users too.
     const savedTheme = localStorage.getItem('fsh_theme');
-    
+    const userManuallyToggled = localStorage.getItem('fsh_theme_manual');
+    if (savedTheme && !userManuallyToggled) {
+        localStorage.removeItem('fsh_theme');
+    }
+
     // If the user has never manually set a theme, follow the device
-    if (!savedTheme) {
+    if (!localStorage.getItem('fsh_theme')) {
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
     } else {
         // User has a saved preference — respect it
-        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('fsh_theme'));
     }
     
     // Listen for device theme changes while the app is open
@@ -140,12 +146,13 @@ function createThemeToggle() {
         themeToggle.className = 'theme-toggle';
         themeToggle.setAttribute('aria-label', 'Toggle Dark Mode');
         
-        const savedTheme = localStorage.getItem('fsh_theme') || 'light';
+        // Read current active theme from the DOM (already set by initializeDarkMode)
+        const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
         
         // Just the slider with icon inside - no side icons
         themeToggle.innerHTML = `
             <div class="theme-toggle-slider">
-                <i class="fas ${savedTheme === 'dark' ? 'fa-moon' : 'fa-sun'}"></i>
+                <i class="fas ${activeTheme === 'dark' ? 'fa-moon' : 'fa-sun'}"></i>
             </div>
         `;
         
@@ -177,6 +184,7 @@ function toggleTheme() {
     
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('fsh_theme', newTheme);
+    localStorage.setItem('fsh_theme_manual', '1'); // Mark as manually chosen
     
     // Update all toggle sliders
     const sliders = document.querySelectorAll('.theme-toggle-slider i');
