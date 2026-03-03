@@ -426,7 +426,7 @@
         width: 100%;
         height: 100px;
         z-index: 1000;
-        padding: 0 20px;
+        padding: 0 20px 0 5%;
         box-shadow: 0 4px 20px var(--shadow);
         transition: top 0.3s ease;
         overflow-y: auto;
@@ -460,12 +460,11 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 10px;
+        gap: 15px;
         padding-top: 0;
         border-top: none;
-        border-left: 2px solid var(--hover-bg);
-        padding-left: 25px;
-        padding-right: -10px;
+        border-left: 1px solid var(--hover-bg);
+        padding-left: 15px;
         margin-left: auto;
     }
 
