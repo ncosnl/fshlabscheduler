@@ -198,11 +198,14 @@ function checkInactivity() {
 
 (function patchFetchForLastActive() {
     const _originalFetch = window.fetch.bind(window);
-    window.fetch = function(input, init = {}) {
-        const url = typeof input === 'string' ? input : (input.url || '');
-        if (url.includes('/api/session')) {
-            const lastActive = localStorage.getItem(STORAGE_KEY) || Date.now().toString();
-            init.headers = Object.assign({}, init.headers, { 'X-Last-Active': lastActive });
+    window.fetch = function(input, init) {
+        const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : '');
+        // Only patch the exact /api/session endpoint, nothing else
+        if (url.endsWith('/api/session')) {
+            init = init ? Object.assign({}, init) : {};
+            init.headers = Object.assign({}, init.headers, {
+                'X-Last-Active': localStorage.getItem(STORAGE_KEY) || Date.now().toString()
+            });
         }
         return _originalFetch(input, init);
     };
