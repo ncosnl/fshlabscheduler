@@ -4,32 +4,45 @@
 // ============================================================================
 
 (function () {
+    const MIN_DISPLAY_MS = 700; // overlay stays at least this long after arriving
+
     // ── Build overlay ─────────────────────────────────────────────────────────
     const overlay = document.createElement('div');
     overlay.id = 'fsh-transition-overlay';
 
     const img = document.createElement('img');
-    // Adjust path if your pages are in subdirectories
     img.src = '../public/fsh_logo_colored.png';
     img.alt = '';
 
     overlay.appendChild(img);
-    document.body.appendChild(overlay);
+
+    // Insert as first child of body so it's available immediately
+    if (document.body) {
+        document.body.insertBefore(overlay, document.body.firstChild);
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.insertBefore(overlay, document.body.firstChild);
+        });
+    }
 
     // Match theme instantly so there's no flash of wrong background color
     const theme = localStorage.getItem('fsh_theme') ||
         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    if (theme === 'dark') {
-        overlay.style.background = '#1a1a1a';
-    }
+    overlay.setAttribute('data-theme-overlay', theme);
 
-    // ── Fade IN: hide overlay after page has loaded ───────────────────────────
+    // ── Fade IN: hide overlay after page fully loaded + min time elapsed ──────
+    const pageArriveTime = Date.now();
+
     function fadeIn() {
-        // Small delay after load so the browser fully paints the page first,
-        // ensuring the CSS opacity transition actually plays instead of skipping.
+        const elapsed = Date.now() - pageArriveTime;
+        const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
+
         setTimeout(() => {
-            overlay.classList.add('fsh-hidden');
-        }, 150);
+            overlay.classList.add('fsh-out');
+            overlay.addEventListener('transitionend', () => {
+                overlay.style.display = 'none';
+            }, { once: true });
+        }, remaining);
     }
 
     if (document.readyState === 'complete') {
@@ -41,16 +54,23 @@
     // ── Fade OUT: show overlay before navigating away ─────────────────────────
     function shouldIntercept(href) {
         if (!href) return false;
-        // Let external links, anchors, mailto, tel, javascript: pass through
         if (/^(https?:|mailto:|tel:|#|javascript:)/.test(href)) return false;
         return true;
     }
 
     function fadeOutThen(callback) {
-        overlay.style.background = theme === 'dark' ? '#1a1a1a' : '#ffffff';
-        overlay.classList.remove('fsh-hidden'); // show overlay
-        // Wait for transition to finish then navigate
-        setTimeout(callback, 520);
+        overlay.style.display = '';
+        overlay.classList.remove('fsh-out');
+        // rAF pair lets the browser register the reset before starting fade-in
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                overlay.classList.add('fsh-visible');
+                setTimeout(() => {
+                    overlay.classList.remove('fsh-visible');
+                    callback();
+                }, 320);
+            });
+        });
     }
 
     // Intercept <a> clicks
@@ -66,9 +86,7 @@
         fadeOutThen(() => { window.location.href = href; });
     });
 
-    // Intercept programmatic navigation via window.location.href = '...'
-    // Your codebase uses this pattern heavily (e.g. window.location.href = 'dashboard.html')
-    // We expose a helper: use fshNavigate('page.html') instead of window.location.href = '...'
+    // Programmatic navigation helper
     window.fshNavigate = function (url) {
         if (!shouldIntercept(url)) {
             window.location.href = url;
@@ -77,12 +95,11 @@
         fadeOutThen(() => { window.location.href = url; });
     };
 
-    // Also catch beforeunload for browser back/forward/refresh
-    // (gives a brief flash of the overlay — best effort on refresh)
+    // bfcache restore — fade in again
     window.addEventListener('pageshow', function (e) {
-        // If page is restored from bfcache, fade it in again
         if (e.persisted) {
-            overlay.classList.remove('fsh-hidden');
+            overlay.style.display = '';
+            overlay.classList.remove('fsh-out', 'fsh-visible');
             fadeIn();
         }
     });
