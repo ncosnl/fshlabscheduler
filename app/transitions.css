@@ -31,10 +31,15 @@
 
 /* ── Logo ── */
 #fsh-transition-overlay img {
-    width: 120px;
-    height: 120px;
+    width: 96px;
+    height: 96px;
     object-fit: contain;
     animation: fsh-pulse 1.2s ease-in-out infinite;
+}
+
+#fsh-transition-overlay[data-theme-overlay="dark"] img {
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5))
+            drop-shadow(0 0 28px rgba(255, 255, 255, 0.25));
 }
 
 @keyframes fsh-pulse {

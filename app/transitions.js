@@ -29,6 +29,16 @@
         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     overlay.setAttribute('data-theme-overlay', theme);
 
+    // Keep overlay theme in sync whenever the user toggles dark/light mode
+    const themeObserver = new MutationObserver(() => {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        overlay.setAttribute('data-theme-overlay', current);
+    });
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+    });
+
     // ── ARRIVAL: fade out after load + min display time ───────────────────────
     const pageArriveTime = Date.now();
 
