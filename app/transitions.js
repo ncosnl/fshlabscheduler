@@ -25,12 +25,11 @@
 
     // ── Fade IN: hide overlay after page has loaded ───────────────────────────
     function fadeIn() {
-        // Double rAF ensures the browser has painted before we start fading
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                overlay.classList.add('fsh-hidden');
-            });
-        });
+        // Small delay after load so the browser fully paints the page first,
+        // ensuring the CSS opacity transition actually plays instead of skipping.
+        setTimeout(() => {
+            overlay.classList.add('fsh-hidden');
+        }, 150);
     }
 
     if (document.readyState === 'complete') {
