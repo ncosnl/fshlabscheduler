@@ -1,6 +1,5 @@
 /* ============================================================================
    TRANSITIONS.CSS — Smooth page fade with FSH logo
-   Add to every page: <link rel="stylesheet" href="transitions.css">
    ============================================================================ */
 
 #fsh-transition-overlay {
@@ -12,7 +11,7 @@
     align-items: center;
     justify-content: center;
     opacity: 1;
-    transition: opacity 0.5s ease;
+    transition: opacity 1.5s ease;
     pointer-events: all;
 }
 
