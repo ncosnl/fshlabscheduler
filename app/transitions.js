@@ -50,7 +50,7 @@
         overlay.style.background = theme === 'dark' ? '#1a1a1a' : '#ffffff';
         overlay.classList.remove('fsh-hidden'); // show overlay
         // Wait for transition to finish then navigate
-        setTimeout(callback, 370);
+        setTimeout(callback, 520);
     }
 
     // Intercept <a> clicks

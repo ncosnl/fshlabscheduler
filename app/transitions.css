@@ -29,7 +29,7 @@
     width: 96px;
     height: 96px;
     object-fit: contain;
-    animation: fsh-pulse 1.1s ease-in-out infinite;
+    animation: fsh-pulse 2.1s ease-in-out infinite;
 }
 
 @keyframes fsh-pulse {
