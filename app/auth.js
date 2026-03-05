@@ -93,7 +93,7 @@ async function handleLogin() {
 // SIGNUP
 // ============================================================================
 
-function confirmEmail() {
+async function confirmEmail() {
     const email = getInputValue('signup-email').toLowerCase();
     clearError('signup-email');
 
@@ -103,12 +103,86 @@ function confirmEmail() {
     }
 
     confirmedEmail = email;
-    const display = document.getElementById('signup-email-display');
-    if (display) display.textContent = confirmedEmail;
 
-    clearPasswordField('signup-password');
-    clearPasswordField('signup-confirm-password');
-    showView('signup-password-view');
+    try {
+        const res  = await apiCall('/api/send-verification', 'POST', { email });
+        const data = await res.json();
+
+        if (!data.success) {
+            // If account already exists, let them know
+            if (res.status === 409) {
+                showError('signup-email');
+            }
+            alert(data.message);
+            return;
+        }
+
+        // Show verification view
+        const display = document.getElementById('signup-verify-email-display');
+        if (display) display.textContent = confirmedEmail;
+        clearInput('signup-verify-code');
+        showView('signup-verify-view');
+
+        const sentMsg = document.getElementById('signup-verify-sent-message');
+        if (sentMsg) {
+            sentMsg.style.display = 'block';
+            setTimeout(() => sentMsg.style.display = 'none', 5000);
+        }
+
+    } catch {
+        alert('Could not reach the server. Please try again.');
+    }
+}
+
+async function verifySignupCode() {
+    const code = getInputValue('signup-verify-code');
+    clearError('signup-verify-code');
+
+    if (!code || code.length !== 6) {
+        showError('signup-verify-code');
+        alert('Please enter the 6-digit verification code.');
+        return;
+    }
+
+    try {
+        const res  = await apiCall('/api/verify-signup', 'POST', { email: confirmedEmail, code });
+        const data = await res.json();
+
+        if (!data.success) {
+            showError('signup-verify-code');
+            alert(data.message);
+            return;
+        }
+
+        // Verified — proceed to password step
+        const display = document.getElementById('signup-email-display');
+        if (display) display.textContent = confirmedEmail;
+        clearPasswordField('signup-password');
+        clearPasswordField('signup-confirm-password');
+        showView('signup-password-view');
+
+    } catch {
+        alert('Could not reach the server. Please try again.');
+    }
+}
+
+async function resendVerificationCode() {
+    if (!confirmedEmail) return;
+    try {
+        const res  = await apiCall('/api/send-verification', 'POST', { email: confirmedEmail });
+        const data = await res.json();
+        if (data.success) {
+            const sentMsg = document.getElementById('signup-verify-sent-message');
+            if (sentMsg) {
+                sentMsg.style.display = 'block';
+                setTimeout(() => sentMsg.style.display = 'none', 5000);
+            }
+        } else {
+            alert(data.message);
+        }
+    } catch {
+        alert('Could not reach the server. Please try again.');
+    }
 }
 
 async function handleSignup() {
@@ -272,6 +346,10 @@ async function resendOTP() {
     }
 }
 
+// Expose signup verification functions
+window.verifySignupCode       = verifySignupCode;
+window.resendVerificationCode = resendVerificationCode;
+
 // ============================================================================
 // LOGOUT
 // ============================================================================
@@ -374,6 +452,7 @@ function setupInputListeners() {
         { id: 'signup-email',            onInput: () => clearError('signup-email'),             onEnter: confirmEmail },
         { id: 'signup-password',         onInput: () => { clearError('signup-password'); updatePasswordIconVisibility('signup-password'); } },
         { id: 'signup-confirm-password', onInput: () => { clearError('signup-confirm-password'); updatePasswordIconVisibility('signup-confirm-password'); }, onEnter: handleSignup },
+        { id: 'signup-verify-code',      onInput: () => clearError('signup-verify-code'),                                                                                onEnter: verifySignupCode },
         { id: 'forgot-email',            onInput: () => clearError('forgot-email'),             onEnter: sendOTP },
         { id: 'otp-code',                onInput: () => clearError('otp-code'),                 onEnter: verifyOTP },
         { id: 'reset-password',          onInput: () => { clearError('reset-password'); updatePasswordIconVisibility('reset-password'); } },

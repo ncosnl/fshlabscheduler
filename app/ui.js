@@ -11,6 +11,7 @@ function showView(viewId) {
         'selection-view',
         'login-view',
         'signup-view',
+        'signup-verify-view',
         'signup-password-view',
         'forgot-password-view',
         'otp-view',
