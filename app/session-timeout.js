@@ -4,7 +4,7 @@
 //   dashboard.html, laboratory.html, mail.html, profile.html
 // ============================================================================
 
-const INACTIVITY_LIMIT_MS = 1 * 60 * 1000; // 1 hour
+const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 const WARNING_BEFORE_MS   = 60 * 1000;       // warn 1 minute before logout
 const CHECK_INTERVAL_MS   = 10 * 1000;       // check every 10 seconds
 const STORAGE_KEY         = 'fsh_last_active';
