@@ -202,6 +202,7 @@ nav img[src*="fsh_logo"] {
 
 #login-view,
 #signup-view,
+#signup-verify-view,
 #signup-password-view,
 #forgot-password-view,
 #otp-view,
@@ -1361,6 +1362,7 @@ nav img[src*="fsh_logo"] {
 
     #login-view,
     #signup-view,
+    #signup-verify-view,
     #signup-password-view,
     #forgot-password-view,
     #otp-view,
