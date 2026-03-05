@@ -241,6 +241,8 @@
                     if (display) display.textContent = verifyEmail;
                     const input = document.getElementById('signup-verify-code');
                     if (input) input.value = verifyCode;
+                    // Clear URL params so refreshing doesn't re-trigger this
+                    window.history.replaceState({}, document.title, window.location.pathname);
                     showView('signup-verify-view');
                     // Auto-verify after short delay so the view is visible first
                     setTimeout(verifySignupCode, 500);
