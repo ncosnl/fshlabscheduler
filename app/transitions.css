@@ -1,0 +1,38 @@
+/* ============================================================================
+   TRANSITIONS.CSS — Smooth page fade with FSH logo
+   Add to every page: <link rel="stylesheet" href="transitions.css">
+   ============================================================================ */
+
+#fsh-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.35s ease;
+    pointer-events: all;
+}
+
+[data-theme="dark"] #fsh-transition-overlay {
+    background: #1a1a1a;
+}
+
+#fsh-transition-overlay.fsh-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#fsh-transition-overlay img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    animation: fsh-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes fsh-pulse {
+    0%, 100% { opacity: 1;   transform: scale(1);    }
+    50%       { opacity: 0.4; transform: scale(0.88); }
+}
