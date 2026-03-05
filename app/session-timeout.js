@@ -257,19 +257,50 @@ function showTimeoutMessageIfNeeded() {
 // AUTO-INIT
 // ============================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    // On the login page — just show the timeout message if redirected here
+function checkAndInit() {
     const isLoginPage = !!document.getElementById('selection-view');
     if (isLoginPage) {
         showTimeoutMessageIfNeeded();
         return;
     }
 
-    // On protected pages — only start if a token exists
     const token = localStorage.getItem('fsh_token');
     if (!token) return;
 
+    // If already inactive for over 1 hour, boot them immediately
+    if (getInactiveMs() >= INACTIVITY_LIMIT_MS) {
+        forceLogout('inactivity');
+        return;
+    }
+
     startInactivityTimer();
+}
+
+// Runs on normal page load
+document.addEventListener('DOMContentLoaded', checkAndInit);
+
+// Runs when Chrome restores a tab from session restore or bfcache
+// This is the key fix for "closed and reopened browser" scenario
+window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+        // Page was restored from bfcache — check immediately
+        const token = localStorage.getItem('fsh_token');
+        if (!token) return;
+        if (getInactiveMs() >= INACTIVITY_LIMIT_MS) {
+            forceLogout('inactivity');
+        }
+    }
+});
+
+// Also check when the tab becomes visible again (e.g. switching back to it)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        const token = localStorage.getItem('fsh_token');
+        if (!token) return;
+        if (getInactiveMs() >= INACTIVITY_LIMIT_MS) {
+            forceLogout('inactivity');
+        }
+    }
 });
 
 // Expose for manual use if needed
