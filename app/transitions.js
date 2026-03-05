@@ -4,7 +4,7 @@
 // ============================================================================
 
 (function () {
-    const MIN_DISPLAY_MS = 700; // overlay stays at least this long after arriving
+    const MIN_DISPLAY_MS = 700; // overlay stays at least this long on arrival
 
     // ── Build overlay ─────────────────────────────────────────────────────────
     const overlay = document.createElement('div');
@@ -13,10 +13,9 @@
     const img = document.createElement('img');
     img.src = '../public/fsh_logo_colored.png';
     img.alt = '';
-
     overlay.appendChild(img);
 
-    // Insert as first child of body so it's available immediately
+    // Insert immediately so it covers the page from the very first paint
     if (document.body) {
         document.body.insertBefore(overlay, document.body.firstChild);
     } else {
@@ -25,19 +24,21 @@
         });
     }
 
-    // Match theme instantly so there's no flash of wrong background color
+    // Match theme before first paint — no flash of wrong color
     const theme = localStorage.getItem('fsh_theme') ||
         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     overlay.setAttribute('data-theme-overlay', theme);
 
-    // ── Fade IN: hide overlay after page fully loaded + min time elapsed ──────
+    // ── ARRIVAL: fade out after load + min display time ───────────────────────
     const pageArriveTime = Date.now();
 
     function fadeIn() {
-        const elapsed = Date.now() - pageArriveTime;
+        const elapsed   = Date.now() - pageArriveTime;
         const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
 
         setTimeout(() => {
+            // Enable transition only now, right before fading out
+            overlay.classList.add('fsh-fading');
             overlay.classList.add('fsh-out');
             overlay.addEventListener('transitionend', () => {
                 overlay.style.display = 'none';
@@ -51,7 +52,7 @@
         window.addEventListener('load', fadeIn);
     }
 
-    // ── Fade OUT: show overlay before navigating away ─────────────────────────
+    // ── DEPARTURE: snap overlay visible instantly, then navigate ─────────────
     function shouldIntercept(href) {
         if (!href) return false;
         if (/^(https?:|mailto:|tel:|#|javascript:)/.test(href)) return false;
@@ -59,16 +60,14 @@
     }
 
     function fadeOutThen(callback) {
+        // Remove display:none and any leftover classes
         overlay.style.display = '';
-        overlay.classList.remove('fsh-out');
-        // rAF pair lets the browser register the reset before starting fade-in
+        overlay.classList.remove('fsh-out', 'fsh-fading');
+        // opacity is 1 and there's no transition — overlay is instantly visible.
+        // Navigate after a brief hold so the overlay is painted before we leave.
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                overlay.classList.add('fsh-visible');
-                setTimeout(() => {
-                    overlay.classList.remove('fsh-visible');
-                    callback();
-                }, 320);
+                setTimeout(callback, 80);
             });
         });
     }
@@ -99,7 +98,7 @@
     window.addEventListener('pageshow', function (e) {
         if (e.persisted) {
             overlay.style.display = '';
-            overlay.classList.remove('fsh-out', 'fsh-visible');
+            overlay.classList.remove('fsh-out', 'fsh-fading');
             fadeIn();
         }
     });

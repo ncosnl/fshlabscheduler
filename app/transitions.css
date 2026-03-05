@@ -1,6 +1,5 @@
 /* ============================================================================
    TRANSITIONS.CSS — Smooth page fade with FSH logo
-   Add to every page: <link rel="stylesheet" href="transitions.css">
    ============================================================================ */
 
 #fsh-transition-overlay {
@@ -9,31 +8,25 @@
     z-index: 99999;
     background: #ffffff;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 32px;
     opacity: 1;
-    transition: opacity 0.55s ease;
+    /* No transition by default — overlay snaps visible instantly on departure */
     pointer-events: all;
 }
 
-/* Dark mode support via attribute set by JS before first paint */
 #fsh-transition-overlay[data-theme-overlay="dark"] {
     background: #1a1a1a;
 }
 
-/* Faded out state — triggered after min display time */
+/* Only apply the slow fade when we're fading OUT (arrival) */
+#fsh-transition-overlay.fsh-fading {
+    transition: opacity 0.55s ease;
+}
+
 #fsh-transition-overlay.fsh-out {
     opacity: 0;
     pointer-events: none;
-}
-
-/* Fading IN on departure (fade to visible quickly) */
-#fsh-transition-overlay.fsh-visible {
-    opacity: 1;
-    pointer-events: all;
-    transition: opacity 0.2s ease;
 }
 
 /* ── Logo ── */
@@ -47,43 +40,4 @@
 @keyframes fsh-pulse {
     0%, 100% { opacity: 1;   transform: scale(1);    }
     50%       { opacity: 0.4; transform: scale(0.88); }
-}
-
-/* ── Loading bar under the logo ── */
-#fsh-transition-overlay::after {
-    content: '';
-    width: 120px;
-    height: 3px;
-    border-radius: 99px;
-    background: rgba(8, 19, 22, 0.12);
-    position: relative;
-    overflow: hidden;
-}
-
-#fsh-transition-overlay[data-theme-overlay="dark"]::after {
-    background: rgba(255, 255, 255, 0.12);
-}
-
-#fsh-transition-overlay::before {
-    content: '';
-    position: absolute;
-    bottom: calc(50% - 56px); /* vertically centered below logo */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 3px;
-    border-radius: 99px;
-    background: #081316;
-    animation: fsh-bar 1.4s ease-in-out infinite;
-    z-index: 1;
-}
-
-#fsh-transition-overlay[data-theme-overlay="dark"]::before {
-    background: #ffffff;
-}
-
-@keyframes fsh-bar {
-    0%   { clip-path: inset(0 100% 0 0); }
-    50%  { clip-path: inset(0 0% 0 0); }
-    100% { clip-path: inset(0 0 0 100%); }
 }
