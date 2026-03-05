@@ -807,7 +807,7 @@ function renderDailyView() {
 
     const monthYear      = document.getElementById('current-month-year');
     const adminMonthYear = document.getElementById('admin-month-year');
-    const label = currentDay.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    const label = currentDay.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     if (monthYear)      monthYear.textContent      = label;
     if (adminMonthYear) adminMonthYear.textContent = label;
 
@@ -819,13 +819,18 @@ function renderDailyView() {
     const isPast  = currentDay < new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const role    = localStorage.getItem('fsh_user_role');
 
-    const dayEl   = document.createElement('div');
-    dayEl.className = 'calendar-day daily-view-day';
-    dayEl.textContent = currentDay.getDate();
+    const dayEl = document.createElement('div');
+    dayEl.className = 'calendar-day daily-view';
 
     if (currentDay.toDateString() === today.toDateString()) dayEl.classList.add('today');
     if (dateStr === selectedDate) dayEl.classList.add('selected');
     if (hasReservations(dateStr)) dayEl.classList.add('has-reservations');
+
+    // Full date on top, large number below
+    dayEl.innerHTML = `
+        <span class="daily-full-date">${currentDay.toLocaleDateString('en-US', { weekday: 'long', month: 'long', year: 'numeric' })}</span>
+        <span class="daily-day-number">${currentDay.getDate()}</span>
+    `;
 
     if (role === 'Admin') {
         dayEl.onclick = () => handleAdminDateClick(dateStr, dayEl);

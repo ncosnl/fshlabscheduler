@@ -801,46 +801,54 @@ nav img[src*="fsh_logo"] {
     color: white;
 }
 
-/* Daily View Styles */
+/* ============================================================================
+   DAILY VIEW — slim rectangle with full date on top
+   Replace the existing daily view block in style.css with this
+   ============================================================================ */
+
 .calendar-day.daily-view {
     aspect-ratio: auto;
-    min-height: 200px;
+    min-height: unset;
+    height: auto;
     flex-direction: column;
-    padding: 20px;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 16px 24px;
+    gap: 4px;
     background: var(--card-bg);
     border: 2px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.daily-date {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+.calendar-day.daily-view:hover {
+    background: var(--hover-bg);
+    transform: none;
 }
 
-.daily-day-name {
-    font-size: clamp(14px, 2vw, 16px);
+/* Full date label at the top — e.g. "Thursday, March 5, 2026" */
+.calendar-day.daily-view .daily-full-date {
+    font-size: 13px;
     font-weight: 500;
     color: var(--secondary-text);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
 }
 
-.daily-day-number {
-    font-size: clamp(48px, 10vw, 72px);
+/* The large day number below it */
+.calendar-day.daily-view .daily-day-number {
+    font-size: clamp(28px, 5vw, 40px);
     font-weight: 700;
     color: var(--text-color);
     line-height: 1;
 }
 
-.daily-month-year {
-    font-size: clamp(14px, 2vw, 16px);
-    color: var(--secondary-text);
-}
-
+/* Selected state */
 .calendar-day.daily-view.selected {
     border-color: #081316;
     background: var(--card-bg);
+    color: var(--text-color);
 }
 
 .calendar-day.daily-view.selected .daily-day-number {
@@ -855,6 +863,23 @@ nav img[src*="fsh_logo"] {
     color: #ffffff;
 }
 
+/* Hide old daily view sub-elements we no longer use */
+.calendar-day.daily-view .daily-date,
+.calendar-day.daily-view .daily-day-name,
+.calendar-day.daily-view .daily-month-year {
+    display: none;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .calendar-day.daily-view {
+        padding: 12px 18px;
+    }
+
+    .calendar-day.daily-view .daily-day-number {
+        font-size: 28px !important;
+    }
+}
 /* ============================================================================
    TIME SLOT SELECTION
    ============================================================================ */
