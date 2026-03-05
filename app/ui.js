@@ -148,7 +148,7 @@ function initializeDashboard() {
     const role = localStorage.getItem('fsh_user_role');
 
     if (!email) {
-        window.location.href = "index.html";
+        fshNavigate("index.html");
         return;
     }
 
@@ -161,7 +161,7 @@ function initializeDashboard() {
 
 function logout() {
     localStorage.clear();
-    window.location.href = "index.html";
+    fshNavigate("index.html");
 }
 
 function selectLab(labName) {

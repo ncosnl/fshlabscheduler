@@ -81,7 +81,7 @@ async function handleLogin() {
         }
 
         saveSession(data.token, data.user);
-        window.location.href = 'dashboard.html';
+        fshNavigate('dashboard.html');
 
     } catch (err) {
         alert('Could not reach the server. Please try again.');
@@ -218,7 +218,7 @@ async function handleSignup() {
         }
 
         saveSession(data.token, data.user);
-        window.location.href = 'dashboard.html';
+        fshNavigate('dashboard.html');
 
     } catch (err) {
         alert('Could not reach the server. Please try again.');
@@ -360,7 +360,7 @@ async function logout() {
     await apiCall('/api/logout', 'POST').catch(() => {});
     clearSession();
     localStorage.removeItem('fsh_last_unread_count'); // ← Clear notification count
-    window.location.href = 'index.html';
+    fshNavigate('index.html');
 }
 
 // ============================================================================
@@ -370,7 +370,7 @@ async function logout() {
 async function requireSession() {
     const token = getToken();
     if (!token) {
-        window.location.href = 'index.html';
+        fshNavigate('index.html');
         return null;
     }
 
@@ -380,7 +380,7 @@ async function requireSession() {
 
         if (!data.success) {
             clearSession();
-            window.location.href = 'index.html';
+            fshNavigate('index.html');
             return null;
         }
 
@@ -393,7 +393,7 @@ async function requireSession() {
         // Fallback: trust localStorage if server is unreachable
         const email = localStorage.getItem('fsh_user_email');
         const role  = localStorage.getItem('fsh_user_role');
-        if (!email) { window.location.href = 'index.html'; return null; }
+        if (!email) { fshNavigate('index.html'); return null; }
         return { email, role };
     }
 }

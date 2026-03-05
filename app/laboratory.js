@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const email = localStorage.getItem('fsh_user_email');
     const role  = localStorage.getItem('fsh_user_role');
 
-    if (!email) { window.location.href = 'index.html'; return; }
+    if (!email) { fshNavigate('index.html'); return; }
 
     // Update user display
     const userDisplay = document.getElementById('user-display');
@@ -940,7 +940,7 @@ function formatDateForStorage(date) {
     return `${y}-${m}-${d}`;
 }
 
-function goBackToDashboard() { window.location.href = 'dashboard.html'; }
+function goBackToDashboard() { fshNavigate('dashboard.html'); }
 
 function highlightDateFromMail(dateString, timeSlot) {
     const targetDate = new Date(dateString);

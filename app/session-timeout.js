@@ -65,7 +65,7 @@ async function forceLogout(reason = 'inactivity') {
         sessionStorage.setItem('fsh_timeout_reason', 'inactivity');
     }
 
-    window.location.href = 'index.html';
+    fshNavigate('index.html');
 }
 
 // ============================================================================
