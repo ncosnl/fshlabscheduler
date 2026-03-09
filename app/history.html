@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>History - FSH Lab Scheduler</title>
+        <meta charset="utf-8">
+        <link rel="icon" type="image/png" href="../public/fsh_logo_colored.png">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="sidebar-nav.css">
+        <link rel="stylesheet" href="history-styles.css">
+        <meta name="description" content="">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <link rel="stylesheet" href="transitions.css">
+    </head>
+    <body>
+    <script src="transitions.js"></script>
+        <div class="dashboard-container">
+            <header class="dash-nav">
+                <nav>
+                    <a href="dashboard.html"><img src="../public/fsh_logo_colored.png"></a>
+                    <div class="nav-right">
+                        <p id="user-display"></p>
+                        <div class="profile-section">
+                            <a href="profile.html" class="profile-link" title="Profile">
+                                <svg class="nav-icon user-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" fill="none"><circle cx="50" cy="36" r="20" stroke="currentColor" stroke-width="7.5"/><path d="M10,84 C10,63 90,63 90,84" stroke="currentColor" stroke-width="7.5" stroke-linecap="round"/></svg>
+                            </a>
+                            <span class="profile-label">Profile</span>
+                        </div>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="history-header">
+                <div class="history-header-content">
+                    <div class="history-header-left">
+                        <h1><i class="fas fa-history"></i> Reservation History</h1>
+                        <p id="history-subtitle">All your laboratory reservations</p>
+                    </div>
+                    <div class="history-header-right">
+                        <button class="back-btn" onclick="goBackToDashboard()">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back to Dashboard</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <main class="main-content">
+                <div class="history-container">
+
+                    <!-- Search Bar -->
+                    <div class="history-search-bar">
+                        <div class="history-search-input-wrap">
+                            <i class="fas fa-search history-search-icon"></i>
+                            <input
+                                type="text"
+                                id="history-search-text"
+                                class="history-search-input"
+                                placeholder="Search by lab or subject...">
+                        </div>
+                        <input type="date" id="history-search-date" class="history-date-input">
+                        <button
+                            class="history-clear-btn"
+                            id="history-clear-btn"
+                            onclick="clearHistorySearch()"
+                            style="display:none;">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="history-stats" id="history-stats"></div>
+
+                    <!-- Filter Tabs -->
+                    <div class="history-tabs">
+                        <button class="history-tab active" onclick="setHistoryFilter('all')" data-filter="all">
+                            All <span class="tab-count" id="h-count-all">0</span>
+                        </button>
+                        <button class="history-tab" onclick="setHistoryFilter('approved')" data-filter="approved">
+                            Approved <span class="tab-count" id="h-count-approved">0</span>
+                        </button>
+                        <button class="history-tab" onclick="setHistoryFilter('pending')" data-filter="pending">
+                            Pending <span class="tab-count" id="h-count-pending">0</span>
+                        </button>
+                        <button class="history-tab" onclick="setHistoryFilter('declined')" data-filter="declined">
+                            Declined <span class="tab-count" id="h-count-declined">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Reservation List -->
+                    <div class="history-list" id="history-list">
+                        <div class="history-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Loading your reservations...</span>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+
+        <script src="sidebar-nav.js"></script>
+        <script src="push-manager.js"></script>
+        <script src="notifications.js"></script>
+        <script src="ui.js"></script>
+        <script src="session-timeout.js"></script>
+        <script src="history.js"></script>
+    </body>
+</html>

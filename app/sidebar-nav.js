@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.setAttribute('data-page', 'mail');
     } else if (document.querySelector('.profile-container')) {
         document.body.setAttribute('data-page', 'profile');
+    } else if (document.querySelector('.history-container')) {
+        document.body.setAttribute('data-page', 'history');
     } else if (document.querySelector('.lab-grid')) {
         document.body.setAttribute('data-page', 'dashboard');
     }
@@ -92,6 +94,31 @@ function initializeSidebar() {
             closeSidebar();
         }
     });
+
+    // ── History link for Teacher role ─────────────────────────────────────────
+    const role = localStorage.getItem('fsh_user_role');
+    if (role === 'Teacher') {
+        const navRight = dashNav.querySelector('.nav-right');
+        if (navRight) {
+            const histSec = document.createElement('div');
+            histSec.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;';
+            histSec.innerHTML = `
+                <a href="history.html" class="profile-link" title="Reservation History">
+                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" fill="none">
+                        <circle cx="50" cy="50" r="28" stroke="currentColor" stroke-width="7.5"/>
+                        <polyline points="50,28 50,52 64,64" stroke="currentColor" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+                <span class="profile-label">History</span>
+            `;
+            const profileSection = navRight.querySelector('.profile-section');
+            if (profileSection) {
+                navRight.insertBefore(histSec, profileSection);
+            } else {
+                navRight.prepend(histSec);
+            }
+        }
+    }
 }
 
 // ============================================================================

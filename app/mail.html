@@ -50,6 +50,26 @@
 
             <main class="main-content">
                 <div class="mail-container">
+                    <!-- Search Bar -->
+                    <div class="mail-search-bar">
+                        <div class="mail-search-input-wrap">
+                            <i class="fas fa-search mail-search-icon"></i>
+                            <input
+                                type="text"
+                                id="mail-search-text"
+                                class="mail-search-input"
+                                placeholder="Search by teacher, lab or subject...">
+                        </div>
+                        <input type="date" id="mail-search-date" class="mail-date-input">
+                        <button
+                            class="mail-clear-btn"
+                            id="mail-search-clear"
+                            onclick="clearMailSearch()"
+                            style="display:none;">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+
                     <!-- Filter Tabs -->
                     <div class="mail-tabs">
                         <button class="mail-tab active" onclick="filterMessages('all')" data-filter="all">

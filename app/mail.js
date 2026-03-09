@@ -9,6 +9,8 @@ let currentFilter      = 'all';
 let currentMessageId   = null;
 let mailPollingInterval = null;
 let allNotifications   = [];
+let mailSearchText     = '';
+let mailSearchDate     = '';
 
 // ============================================================================
 // API HELPER
@@ -51,6 +53,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initial load
     await loadMessages();
 
+    // ── Search event listeners ────────────────────────────────────────────────
+    const searchText = document.getElementById('mail-search-text');
+    const searchDate = document.getElementById('mail-search-date');
+    const clearBtn   = document.getElementById('mail-search-clear');
+
+    const updateMailClearBtn = () => {
+        if (clearBtn) {
+            clearBtn.style.display = (mailSearchText || mailSearchDate) ? 'flex' : 'none';
+        }
+    };
+
+    let searchDebounce;
+    searchText?.addEventListener('input', () => {
+        mailSearchText = searchText.value.trim();
+        updateMailClearBtn();
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            const filtered = filterNotifications(allNotifications, currentFilter);
+            renderMessages(applyMailSearch(filtered));
+        }, 200);
+    });
+
+    searchDate?.addEventListener('change', () => {
+        mailSearchDate = searchDate.value;
+        updateMailClearBtn();
+        const filtered = filterNotifications(allNotifications, currentFilter);
+        renderMessages(applyMailSearch(filtered));
+    });
+
     // Poll every 5 seconds
     mailPollingInterval = setInterval(loadMessages, 5000);
 
@@ -72,7 +103,7 @@ async function loadMessages() {
 
         updateCounts(allNotifications);
         const filtered = filterNotifications(allNotifications, currentFilter);
-        renderMessages(filtered);
+        renderMessages(applyMailSearch(filtered));
         updateNotificationBadge();
 
     } catch (err) {
@@ -86,6 +117,50 @@ function updateCounts(notifications) {
     document.getElementById('count-approved').textContent = notifications.filter(n => n.status === 'approved').length;
     document.getElementById('count-pending').textContent  = notifications.filter(n => n.status === 'pending').length;
 }
+
+// ============================================================================
+// SEARCH
+// ============================================================================
+
+function applyMailSearch(notifications) {
+    let result = notifications;
+
+    if (mailSearchText) {
+        const q = mailSearchText.toLowerCase();
+        result = result.filter(n =>
+            (n.from?.split('@')[0] || '').toLowerCase().includes(q) ||
+            (n.lab     || '').toLowerCase().includes(q) ||
+            (n.message || '').toLowerCase().includes(q) ||
+            (n.subject || '').toLowerCase().includes(q)
+        );
+    }
+
+    if (mailSearchDate) {
+        result = result.filter(n => n.date === mailSearchDate);
+    }
+
+    return result;
+}
+
+function clearMailSearch() {
+    mailSearchText = '';
+    mailSearchDate = '';
+
+    const textInput = document.getElementById('mail-search-text');
+    const dateInput = document.getElementById('mail-search-date');
+    const clearBtn  = document.getElementById('mail-search-clear');
+
+    if (textInput) textInput.value = '';
+    if (dateInput) dateInput.value = '';
+    if (clearBtn)  clearBtn.style.display = 'none';
+
+    const filtered = filterNotifications(allNotifications, currentFilter);
+    renderMessages(filtered);
+}
+
+// ============================================================================
+// FILTER
+// ============================================================================
 
 function filterNotifications(notifications, filter) {
     switch (filter) {
@@ -448,7 +523,7 @@ function filterMessages(filter) {
     document.querySelector(`[data-filter="${filter}"]`)?.classList.add('active');
 
     const filtered = filterNotifications(allNotifications, filter);
-    renderMessages(filtered);
+    renderMessages(applyMailSearch(filtered));
 }
 
 // ============================================================================
@@ -679,6 +754,7 @@ function viewScheduleInLaboratory(labName, date, timeSlot) {
 }
 
 // ── Expose globals ────────────────────────────────────────────────────────────
+window.clearMailSearch             = clearMailSearch;
 window.filterMessages              = filterMessages;
 window.openMessage                 = openMessage;
 window.closeMessageModal           = closeMessageModal;

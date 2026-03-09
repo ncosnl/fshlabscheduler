@@ -543,6 +543,107 @@
 }
 
 /* ============================================================================
+   SEARCH BAR
+   ============================================================================ */
+
+.mail-search-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.mail-search-input-wrap {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--input-border);
+    border-radius: 50px;
+    padding: 10px 18px;
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mail-search-input-wrap:focus-within {
+    border-color: #081316;
+    box-shadow: 0 0 0 3px rgba(8, 19, 22, 0.08);
+}
+
+[data-theme="dark"] .mail-search-input-wrap:focus-within {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+
+.mail-search-icon {
+    color: var(--secondary-text);
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.mail-search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: var(--text-color);
+    font-family: inherit;
+}
+
+.mail-search-input::placeholder { color: var(--secondary-text); }
+
+.mail-date-input {
+    background: var(--card-bg);
+    border: 1.5px solid var(--input-border);
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-size: 14px;
+    color: var(--text-color);
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    flex-shrink: 0;
+}
+
+.mail-date-input:focus {
+    border-color: #081316;
+    box-shadow: 0 0 0 3px rgba(8, 19, 22, 0.08);
+}
+
+[data-theme="dark"] .mail-date-input:focus {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+
+.mail-clear-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1.5px solid var(--secondary-text);
+    color: var(--secondary-text);
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.mail-clear-btn:hover {
+    background: var(--hover-bg);
+    transform: translateY(-1px);
+}
+
+/* ============================================================================
    RESPONSIVE DESIGN
    ============================================================================ */
 
@@ -569,6 +670,12 @@
     .mail-container {
         padding: 30px 15px;
     }
+
+    .mail-search-bar { flex-direction: column; }
+    .mail-search-input-wrap,
+    .mail-date-input,
+    .mail-clear-btn { width: 100%; box-sizing: border-box; }
+    .mail-clear-btn { justify-content: center; }
 
     .mail-tabs {
         flex-direction: column;
