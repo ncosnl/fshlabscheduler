@@ -222,8 +222,6 @@ async function openMessage(notificationId) {
     }
 
     // Edit button for teachers on their own pending/approved reservations.
-    // Teachers only receive notifications about their own reservations, so no
-    // extra email ownership check is needed beyond the role check.
     const isTeacher = !isAdmin;
     const canTeacherEdit = isTeacher && notif.reservationId &&
         (notif.status === 'pending' || notif.status === 'approved');
@@ -396,18 +394,47 @@ const TIME_SLOTS_MAIL = [
     '05:00 PM - 06:00 PM'
 ];
 
+// ============================================================================
+// EDIT MODAL TIME SLOT HELPER
+// Builds <option> elements, disabling slots already taken on a given date/lab
+// (excluding the reservation being edited)
+// ============================================================================
+
+function buildMailTimeSlotOptions(selectedSlot, forDate, labName, excludeReservationId, allLabReservations) {
+    return TIME_SLOTS_MAIL.map(slot => {
+        const isTaken = allLabReservations.some(r =>
+            r.id !== excludeReservationId &&
+            r.date === forDate &&
+            r.timeSlot === slot &&
+            r.lab === labName &&
+            (r.status === 'approved' || r.status === 'pending')
+        );
+        const isSelected = slot === selectedSlot;
+        return `<option value="${slot}" ${isSelected ? 'selected' : ''} ${isTaken ? 'disabled' : ''}>
+            ${slot}${isTaken ? ' (Taken)' : ''}
+        </option>`;
+    }).join('');
+}
+
 async function openEditModalFromMail(reservationId, labName) {
-    // Fetch the reservation data first
+    // Fetch the reservation data and all reservations for the lab
     let r = null;
+    let allLabReservations = [];
     try {
         const data = await mailApiCall(`/api/reservations?lab=${encodeURIComponent(labName)}`);
-        if (data.success) r = data.reservations.find(res => res.id === reservationId);
+        if (data.success) {
+            allLabReservations = data.reservations;
+            r = allLabReservations.find(res => res.id === reservationId);
+        }
     } catch (err) { console.error(err); }
 
     if (!r) { alert('Could not load reservation data.'); return; }
 
     closeMessageModal();
     document.getElementById('mail-edit-modal')?.remove();
+
+    // Build initial time slot options for the reservation's current date
+    const timeSlotOptionsHtml = buildMailTimeSlotOptions(r.timeSlot, r.date, labName, reservationId, allLabReservations);
 
     const modal = document.createElement('div');
     modal.id = 'mail-edit-modal';
@@ -445,9 +472,14 @@ async function openEditModalFromMail(reservationId, labName) {
                         min="${new Date().toISOString().split('T')[0]}" style="margin:0;">
                 </div>
                 <div>
-                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Time Slot</label>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">
+                        Time Slot
+                        <span style="font-weight:400; text-transform:none; font-size:11px; color:#f59e0b; margin-left:6px;">
+                            <i class="fas fa-circle-info"></i> Taken slots are disabled
+                        </span>
+                    </label>
                     <select id="mail-edit-timeslot" class="login-input" required style="margin:0;">
-                        ${TIME_SLOTS_MAIL.map(s => `<option value="${s}" ${s === r.timeSlot ? 'selected' : ''}>${s}</option>`).join('')}
+                        ${timeSlotOptionsHtml}
                     </select>
                 </div>
                 <div>
@@ -504,6 +536,16 @@ async function openEditModalFromMail(reservationId, labName) {
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
     modal.addEventListener('click', e => { if (e.target === modal) closeMailEditModal(); });
+
+    // Re-render time slot options whenever the date changes
+    const dateInput      = document.getElementById('mail-edit-date');
+    const timeslotSelect = document.getElementById('mail-edit-timeslot');
+    dateInput.addEventListener('change', () => {
+        const currentVal = timeslotSelect.value;
+        timeslotSelect.innerHTML = buildMailTimeSlotOptions(
+            currentVal, dateInput.value, labName, reservationId, allLabReservations
+        );
+    });
 
     document.getElementById('mail-edit-form').addEventListener('submit', async (e) => {
         e.preventDefault();

@@ -159,6 +159,33 @@ function isSlotReserved(date, timeSlot) {
 }
 
 // ============================================================================
+// EDIT MODAL — TIME SLOT HELPERS
+// Returns HTML <option> elements for a given date, excluding a reservation ID
+// ============================================================================
+
+function buildTimeSlotOptions(selectedSlot, forDate, excludeReservationId) {
+    return TIME_SLOTS.map(slot => {
+        const isTaken = reservationsCache.some(r =>
+            r.id !== excludeReservationId &&
+            r.date === forDate &&
+            r.timeSlot === slot &&
+            r.lab === currentLab &&
+            (r.status === 'approved' || r.status === 'pending')
+        );
+        const isSelected = slot === selectedSlot;
+        return `<option value="${slot}" ${isSelected ? 'selected' : ''} ${isTaken ? 'disabled' : ''}>
+            ${slot}${isTaken ? ' (Taken)' : ''}
+        </option>`;
+    }).join('');
+}
+
+// Re-renders the time slot <select> inside the edit modal when the date changes
+function refreshEditModalTimeSlots(selectEl, dateInputEl, excludeReservationId) {
+    const currentVal = selectEl.value;
+    selectEl.innerHTML = buildTimeSlotOptions(currentVal, dateInputEl.value, excludeReservationId);
+}
+
+// ============================================================================
 // USER VIEW (Teachers)
 // ============================================================================
 
@@ -366,6 +393,9 @@ function openEditModal(reservationId) {
     document.getElementById('edit-reservation-modal')?.remove();
     document.body.style.overflow = 'hidden';
 
+    // Build time slot options for the reservation's current date
+    const timeSlotOptionsHtml = buildTimeSlotOptions(r.timeSlot, r.date, reservationId);
+
     const modal = document.createElement('div');
     modal.id = 'edit-reservation-modal';
     modal.style.cssText = `
@@ -402,9 +432,14 @@ function openEditModal(reservationId) {
                         min="${new Date().toISOString().split('T')[0]}" style="margin:0;">
                 </div>
                 <div>
-                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">Time Slot</label>
+                    <label style="font-size:13px; font-weight:500; color:var(--secondary-text); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px;">
+                        Time Slot
+                        <span style="font-weight:400; text-transform:none; font-size:11px; color:#f59e0b; margin-left:6px;">
+                            <i class="fas fa-circle-info"></i> Taken slots are disabled
+                        </span>
+                    </label>
                     <select id="edit-timeslot" class="login-input" required style="margin:0;">
-                        ${TIME_SLOTS.map(slot => `<option value="${slot}" ${slot === r.timeSlot ? 'selected' : ''}>${slot}</option>`).join('')}
+                        ${timeSlotOptionsHtml}
                     </select>
                 </div>
                 <div>
@@ -461,6 +496,14 @@ function openEditModal(reservationId) {
 
     document.body.appendChild(modal);
     modal.addEventListener('click', e => { if (e.target === modal) closeEditModal(); });
+
+    // Re-render time slot options whenever the date changes
+    const dateInput     = document.getElementById('edit-date');
+    const timeslotSelect = document.getElementById('edit-timeslot');
+    dateInput.addEventListener('change', () => {
+        refreshEditModalTimeSlots(timeslotSelect, dateInput, reservationId);
+    });
+
     document.getElementById('edit-reservation-form').addEventListener('submit', e => {
         handleEditSubmit(e, reservationId);
     });
