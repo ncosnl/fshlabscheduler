@@ -646,6 +646,14 @@ function renderReservationsList() {
                 ${approvedCount > 0 ? `<div style="padding:8px 16px;background:#22c55e;color:white;border-radius:20px;font-size:13px;font-weight:600;"><i class="fas fa-check"></i> ${approvedCount} Approved</div>` : ''}
                 ${declinedCount > 0 ? `<div style="padding:8px 16px;background:#ef4444;color:white;border-radius:20px;font-size:13px;font-weight:600;"><i class="fas fa-times"></i> ${declinedCount} Declined</div>` : ''}
             </div>
+            <button onclick="exportReservationsCSV()" style="
+                display:flex; align-items:center; gap:8px;
+                background:var(--button-bg); color:var(--button-text);
+                border:none; border-radius:50px; padding:8px 18px;
+                font-size:13px; font-weight:600; cursor:pointer;
+                transition:opacity 0.2s; white-space:nowrap;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
         </div>
     `;
 
@@ -658,6 +666,14 @@ function createReservationItem(reservation) {
 
     const teacherName  = reservation.teacherName || reservation.requester.split('@')[0];
     const statusBadge  = `<span class="reservation-status ${reservation.status}">${reservation.status}</span>`;
+    const commentHtml  = reservation.adminComment ? `
+        <div style="margin-top:10px; padding:10px 14px; border-radius:8px;
+            background:${reservation.status === 'declined' ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)'};
+            border-left:3px solid ${reservation.status === 'declined' ? '#ef4444' : '#22c55e'};
+            font-size:13px; color:var(--text-color);">
+            <i class="fas fa-comment-dots" style="margin-right:6px; opacity:0.6;"></i>
+            <strong>Admin note:</strong> ${reservation.adminComment}
+        </div>` : '';
 
     div.innerHTML = `
         <div class="reservation-header">
@@ -668,15 +684,16 @@ function createReservationItem(reservation) {
                 <p><i class="fas fa-book"></i> ${reservation.subject} - Grade ${reservation.grade}</p>
                 <p><i class="fas fa-users"></i> ${reservation.students} students</p>
                 <p><i class="fas fa-info-circle"></i> ${reservation.purpose}</p>
+                ${commentHtml}
             </div>
             ${statusBadge}
         </div>
         ${reservation.status === 'pending' ? `
             <div class="reservation-actions">
-                <button class="approve-btn" onclick="approveReservation('${reservation.id}')">
+                <button class="approve-btn" onclick="openApproveModal('${reservation.id}')">
                     <i class="fas fa-check"></i> Approve
                 </button>
-                <button class="decline-btn" onclick="declineReservation('${reservation.id}')">
+                <button class="decline-btn" onclick="openDeclineModal('${reservation.id}')">
                     <i class="fas fa-times"></i> Decline
                 </button>
             </div>
@@ -686,38 +703,159 @@ function createReservationItem(reservation) {
     return div;
 }
 
-async function approveReservation(id) {
-    if (!confirm('✅ Approve this reservation?')) return;
+// ── Comment Modal ─────────────────────────────────────────────────────────────
+
+function openCommentModal({ id, action }) {
+    document.getElementById('admin-comment-modal')?.remove();
+    document.body.style.overflow = 'hidden';
+
+    const isApprove  = action === 'approved';
+    const accentColor = isApprove ? '#22c55e' : '#ef4444';
+    const icon        = isApprove ? 'fa-check' : 'fa-times';
+    const label       = isApprove ? 'Approve' : 'Decline';
+
+    const modal = document.createElement('div');
+    modal.id = 'admin-comment-modal';
+    modal.style.cssText = `
+        position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.5); z-index:3000;
+        display:flex; align-items:center; justify-content:center;
+        padding:20px; box-sizing:border-box;
+    `;
+    modal.innerHTML = `
+        <div style="background:var(--card-bg); border-radius:20px; width:100%; max-width:480px;
+            box-shadow:0 10px 40px rgba(0,0,0,0.3); overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#081316 0%,#2a3a3f 100%);
+                padding:18px 24px; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="color:white; margin:0; font-size:1rem; font-weight:600;">
+                    <i class="fas ${icon}" style="margin-right:8px; color:${accentColor};"></i>${label} Reservation
+                </h3>
+                <button onclick="closeCommentModal()" style="
+                    background:rgba(255,255,255,0.15); border:none; color:white;
+                    width:26px; height:26px; border-radius:50%; cursor:pointer;
+                    font-size:13px; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+                <div>
+                    <label style="font-size:12px; font-weight:600; text-transform:uppercase;
+                        letter-spacing:0.5px; color:var(--secondary-text); display:block; margin-bottom:6px;">
+                        Note for teacher <span style="font-weight:400; text-transform:none;">(optional)</span>
+                    </label>
+                    <textarea id="admin-comment-input" placeholder="${isApprove
+                        ? 'e.g. Please arrive 10 minutes early to set up.'
+                        : 'e.g. Lab is under maintenance on this date.'}"
+                        style="width:100%; padding:12px 14px; border:1px solid var(--border-color);
+                            border-radius:10px; font-size:14px; font-family:inherit;
+                            background:var(--input-bg); color:var(--text-color);
+                            resize:vertical; min-height:90px; outline:none;
+                            transition:border-color 0.2s;"></textarea>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="closeCommentModal()" style="
+                        flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                        background:transparent; color:var(--secondary-text);
+                        border:1px solid var(--secondary-text); font-size:14px; font-weight:500;">
+                        Cancel
+                    </button>
+                    <button id="admin-comment-submit" onclick="submitCommentModal('${id}','${action}')" style="
+                        flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                        background:${accentColor}; color:white; border:none;
+                        font-size:14px; font-weight:600; display:flex;
+                        align-items:center; justify-content:center; gap:8px;
+                        transition:opacity 0.2s;">
+                        <i class="fas ${icon}"></i> ${label}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeCommentModal(); });
+    document.getElementById('admin-comment-input').focus();
+}
+
+function closeCommentModal() {
+    document.getElementById('admin-comment-modal')?.remove();
+    document.body.style.overflow = '';
+}
+
+function openApproveModal(id) { openCommentModal({ id, action: 'approved' }); }
+function openDeclineModal(id)  { openCommentModal({ id, action: 'declined' }); }
+
+async function submitCommentModal(id, action) {
+    const comment   = document.getElementById('admin-comment-input')?.value.trim() || '';
+    const submitBtn = document.getElementById('admin-comment-submit');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
 
     try {
-        const data = await apiCall(`/api/reservations/${id}`, 'PATCH', { status: 'approved' });
+        const body = { status: action };
+        if (comment) body.adminComment = comment;
+
+        const data = await apiCall(`/api/reservations/${id}`, 'PATCH', body);
         if (!data.success) { alert(data.message); return; }
 
+        closeCommentModal();
         await fetchReservations();
         renderReservationsList();
         renderCalendar();
-        alert('✅ Reservation approved! The teacher has been notified.');
+
+        if (action === 'approved') {
+            alert('✅ Reservation approved! The teacher has been notified.');
+        } else {
+            alert('❌ Reservation declined. The teacher has been notified.');
+        }
     } catch (err) {
         alert('Error: ' + (err.message || 'Could not reach the server.'));
         console.error(err);
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; }
     }
 }
 
-async function declineReservation(id) {
-    if (!confirm('❌ Decline this reservation?')) return;
+// Keep old names as aliases in case called from showAdminDayReservations
+async function approveReservation(id) { openApproveModal(id); }
+async function declineReservation(id)  { openDeclineModal(id); }
 
-    try {
-        const data = await apiCall(`/api/reservations/${id}`, 'PATCH', { status: 'declined' });
-        if (!data.success) { alert(data.message); return; }
+// ============================================================================
+// EXPORT TO CSV
+// ============================================================================
 
-        await fetchReservations();
-        renderReservationsList();
-        renderCalendar();
-        alert('❌ Reservation declined. The teacher has been notified.');
-    } catch (err) {
-        alert('Error: ' + (err.message || 'Could not reach the server.'));
-        console.error(err);
+function exportReservationsCSV() {
+    const reservations = reservationsCache
+        .filter(r => r.lab === currentLab)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (reservations.length === 0) {
+        alert('No reservations to export for this lab.');
+        return;
     }
+
+    const headers = ['Date','Time Slot','Teacher','Subject','Grade','Students','Purpose','Status','Admin Note','Submitted'];
+    const rows    = reservations.map(r => [
+        r.date,
+        r.timeSlot,
+        r.teacherName || r.requester.split('@')[0],
+        r.subject,
+        `Grade ${r.grade}`,
+        r.students,
+        `"${(r.purpose || '').replace(/"/g, '""')}"`,
+        r.status,
+        `"${(r.adminComment || '').replace(/"/g, '""')}"`,
+        r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-US') : ''
+    ]);
+
+    const csv      = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob     = new Blob([csv], { type: 'text/csv' });
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement('a');
+    const safeName = currentLab.replace(/\s+/g, '_');
+    a.href         = url;
+    a.download     = `${safeName}_Reservations_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // ============================================================================
@@ -1044,6 +1182,11 @@ window.nextMonth              = nextMonth;
 window.showCalendarView       = showCalendarView;
 window.approveReservation     = approveReservation;
 window.declineReservation     = declineReservation;
+window.openApproveModal       = openApproveModal;
+window.openDeclineModal       = openDeclineModal;
+window.closeCommentModal      = closeCommentModal;
+window.submitCommentModal     = submitCommentModal;
+window.exportReservationsCSV  = exportReservationsCSV;
 window.goBackToDashboard      = goBackToDashboard;
 window.highlightDateFromMail  = highlightDateFromMail;
 window.renderReservationsList = renderReservationsList;

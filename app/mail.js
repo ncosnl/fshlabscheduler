@@ -213,6 +213,16 @@ async function openMessage(notificationId) {
                             <div class="detail-label">Purpose / Activity</div>
                             <div class="detail-value">${res.purpose}</div>
                         </div>
+                        ${res.adminComment ? `
+                        <div class="detail-section">
+                            <div class="detail-label">Admin Note</div>
+                            <div class="detail-value" style="
+                                background:${res.status === 'declined' ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)'};
+                                border-left:3px solid ${res.status === 'declined' ? '#ef4444' : '#22c55e'};
+                                border-radius:0 8px 8px 0; padding:10px 14px;">
+                                <i class="fas fa-comment-dots" style="margin-right:6px; opacity:0.6;"></i>${res.adminComment}
+                            </div>
+                        </div>` : ''}
                     `;
                 }
             }
@@ -239,13 +249,13 @@ async function openMessage(notificationId) {
         </div>
     ` : '';
 
-    // Admin action buttons for pending requests
+    // Admin action buttons for pending requests — now opens comment modal
     const adminActions = isAdmin && isPending ? `
         <div class="message-actions">
-            <button class="action-btn approve" onclick="approveReservationFromMail('${notif.reservationId}')">
+            <button class="action-btn approve" onclick="openMailApproveModal('${notif.reservationId}')">
                 <i class="fas fa-check"></i> Approve
             </button>
-            <button class="action-btn reject" onclick="rejectReservationFromMail('${notif.reservationId}')">
+            <button class="action-btn reject" onclick="openMailDeclineModal('${notif.reservationId}')">
                 <i class="fas fa-times"></i> Decline
             </button>
         </div>
@@ -316,39 +326,116 @@ window.onclick = function(event) {
 // ADMIN ACTIONS
 // ============================================================================
 
-async function approveReservationFromMail(reservationId) {
-    if (!confirm('Approve this reservation?')) return;
+function openMailCommentModal({ reservationId, action }) {
+    document.getElementById('mail-comment-modal')?.remove();
+
+    const isApprove   = action === 'approved';
+    const accentColor = isApprove ? '#22c55e' : '#ef4444';
+    const icon        = isApprove ? 'fa-check' : 'fa-times';
+    const label       = isApprove ? 'Approve' : 'Decline';
+
+    const modal = document.createElement('div');
+    modal.id = 'mail-comment-modal';
+    modal.style.cssText = `
+        position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.6); z-index:4000;
+        display:flex; align-items:center; justify-content:center;
+        padding:20px; box-sizing:border-box;
+    `;
+    modal.innerHTML = `
+        <div style="background:var(--card-bg); border-radius:20px; width:100%; max-width:460px;
+            box-shadow:0 10px 40px rgba(0,0,0,0.35); overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#081316 0%,#2a3a3f 100%);
+                padding:18px 24px; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="color:white; margin:0; font-size:1rem; font-weight:600;">
+                    <i class="fas ${icon}" style="margin-right:8px; color:${accentColor};"></i>${label} Reservation
+                </h3>
+                <button onclick="closeMailCommentModal()" style="
+                    background:rgba(255,255,255,0.15); border:none; color:white;
+                    width:26px; height:26px; border-radius:50%; cursor:pointer;
+                    font-size:13px; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+                <div>
+                    <label style="font-size:12px; font-weight:600; text-transform:uppercase;
+                        letter-spacing:0.5px; color:var(--secondary-text); display:block; margin-bottom:6px;">
+                        Note for teacher <span style="font-weight:400; text-transform:none;">(optional)</span>
+                    </label>
+                    <textarea id="mail-comment-input" placeholder="${isApprove
+                        ? 'e.g. Please arrive 10 minutes early to set up.'
+                        : 'e.g. Lab is under maintenance on this date.'}"
+                        style="width:100%; padding:12px 14px; border:1px solid var(--border-color);
+                            border-radius:10px; font-size:14px; font-family:inherit;
+                            background:var(--input-bg,var(--card-bg)); color:var(--text-color);
+                            resize:vertical; min-height:90px; outline:none; box-sizing:border-box;
+                            transition:border-color 0.2s;"></textarea>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="closeMailCommentModal()" style="
+                        flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                        background:transparent; color:var(--secondary-text);
+                        border:1px solid var(--secondary-text); font-size:14px; font-weight:500;">
+                        Cancel
+                    </button>
+                    <button id="mail-comment-submit" onclick="submitMailCommentModal('${reservationId}','${action}')" style="
+                        flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                        background:${accentColor}; color:white; border:none;
+                        font-size:14px; font-weight:600; display:flex;
+                        align-items:center; justify-content:center; gap:8px;
+                        transition:opacity 0.2s;">
+                        <i class="fas ${icon}"></i> ${label}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeMailCommentModal(); });
+    setTimeout(() => document.getElementById('mail-comment-input')?.focus(), 50);
+}
+
+function closeMailCommentModal() {
+    document.getElementById('mail-comment-modal')?.remove();
+}
+
+function openMailApproveModal(id) { openMailCommentModal({ reservationId: id, action: 'approved' }); }
+function openMailDeclineModal(id)  { openMailCommentModal({ reservationId: id, action: 'declined' }); }
+
+async function submitMailCommentModal(reservationId, action) {
+    const comment   = document.getElementById('mail-comment-input')?.value.trim() || '';
+    const submitBtn = document.getElementById('mail-comment-submit');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
 
     try {
-        const data = await mailApiCall(`/api/reservations/${reservationId}`, 'PATCH', { status: 'approved' });
+        const body = { status: action };
+        if (comment) body.adminComment = comment;
+
+        const data = await mailApiCall(`/api/reservations/${reservationId}`, 'PATCH', body);
         if (!data.success) { alert(data.message); return; }
 
-        alert('✅ Reservation approved! Teacher has been notified.');
+        closeMailCommentModal();
         closeMessageModal();
         await loadMessages();
 
+        if (action === 'approved') {
+            alert('✅ Reservation approved! Teacher has been notified.');
+        } else {
+            alert('❌ Reservation declined. Teacher has been notified.');
+        }
     } catch (err) {
         alert('Could not reach the server. Please try again.');
         console.error(err);
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; }
     }
 }
 
-async function rejectReservationFromMail(reservationId) {
-    if (!confirm('Decline this reservation?')) return;
-
-    try {
-        const data = await mailApiCall(`/api/reservations/${reservationId}`, 'PATCH', { status: 'declined' });
-        if (!data.success) { alert(data.message); return; }
-
-        alert('❌ Reservation declined. Teacher has been notified.');
-        closeMessageModal();
-        await loadMessages();
-
-    } catch (err) {
-        alert('Could not reach the server. Please try again.');
-        console.error(err);
-    }
-}
+// Keep old names as aliases for safety
+async function approveReservationFromMail(id) { openMailApproveModal(id); }
+async function rejectReservationFromMail(id)   { openMailDeclineModal(id); }
 
 // ============================================================================
 // FILTER
@@ -592,12 +679,16 @@ function viewScheduleInLaboratory(labName, date, timeSlot) {
 }
 
 // ── Expose globals ────────────────────────────────────────────────────────────
-window.filterMessages             = filterMessages;
-window.openMessage                = openMessage;
-window.closeMessageModal          = closeMessageModal;
-window.approveReservationFromMail = approveReservationFromMail;
-window.rejectReservationFromMail  = rejectReservationFromMail;
-window.goBackToDashboard          = goBackToDashboard;
-window.viewScheduleInLaboratory   = viewScheduleInLaboratory;
-window.openEditModalFromMail      = openEditModalFromMail;
-window.closeMailEditModal         = closeMailEditModal;
+window.filterMessages              = filterMessages;
+window.openMessage                 = openMessage;
+window.closeMessageModal           = closeMessageModal;
+window.approveReservationFromMail  = approveReservationFromMail;
+window.rejectReservationFromMail   = rejectReservationFromMail;
+window.openMailApproveModal        = openMailApproveModal;
+window.openMailDeclineModal        = openMailDeclineModal;
+window.closeMailCommentModal       = closeMailCommentModal;
+window.submitMailCommentModal      = submitMailCommentModal;
+window.goBackToDashboard           = goBackToDashboard;
+window.viewScheduleInLaboratory    = viewScheduleInLaboratory;
+window.openEditModalFromMail       = openEditModalFromMail;
+window.closeMailEditModal          = closeMailEditModal;
