@@ -361,16 +361,9 @@ async function initTeacherCalendar() {
     const role = localStorage.getItem('fsh_user_role');
     if (role !== 'Teacher') return;
 
-    // Inject section between the h1 header and the lab grid
-    const mainContent = document.querySelector('.main-content');
-    const labGrid     = document.querySelector('.lab-grid');
-    if (!mainContent || !labGrid) return;
-
-    const section = document.createElement('div');
-    section.id = 'tc-section';
-    // Insert before analytics section if present, otherwise before lab grid
-    const analyticsSec = document.getElementById('analytics-section');
-    mainContent.insertBefore(section, analyticsSec || labGrid);
+    // Section already exists in dashboard.html — just use it
+    const section = document.getElementById('tc-section');
+    if (!section) return;
 
     tcRenderSkeleton();
 

@@ -229,14 +229,9 @@ async function initAnalytics() {
     const role = localStorage.getItem('fsh_user_role');
     if (role !== 'Admin') return;
 
-    // Inject the analytics section before the lab grid
-    const mainContent = document.querySelector('.main-content');
-    const labGrid     = document.querySelector('.lab-grid');
-    if (!mainContent || !labGrid) return;
-
-    const section = document.createElement('div');
-    section.id = 'analytics-section';
-    mainContent.insertBefore(section, labGrid);
+    // Section already exists in dashboard.html — just use it
+    const section = document.getElementById('analytics-section');
+    if (!section) return;
 
     renderAnalyticsSkeleton();
 
@@ -247,10 +242,10 @@ async function initAnalytics() {
         renderAnalyticsCard(stats);
     } catch (err) {
         console.error('Analytics load failed:', err);
-        document.getElementById('analytics-section').innerHTML = '';
+        section.innerHTML = '';
     }
 
-    // Refresh every 30 seconds (no need to hammer it like the reservation polling)
+    // Refresh every 30 seconds
     analyticsInterval = setInterval(async () => {
         try {
             const reservations = await fetchAllReservations();
