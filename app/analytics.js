@@ -59,13 +59,6 @@ function computeStats(reservations) {
     const pending   = reservations.filter(r => r.status === 'pending');
     const today     = reservations.filter(r => r.date === todayStr && r.status === 'approved');
 
-    // Lab utilization: approved bookings this week per lab
-    const labCounts = {};
-    ANALYTICS_LABS.forEach(lab => { labCounts[lab] = 0; });
-    thisWeek.filter(r => r.status === 'approved').forEach(r => {
-        if (labCounts[r.lab] !== undefined) labCounts[lab] = (labCounts[r.lab] || 0) + 1;
-    });
-
     // Sort labs by booking count descending
     const labsSorted = Object.entries(
         thisWeek.filter(r => r.status === 'approved').reduce((acc, r) => {
