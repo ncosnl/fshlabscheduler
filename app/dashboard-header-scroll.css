@@ -1,0 +1,85 @@
+/* ============================================================================
+   DASHBOARD-HEADER-SCROLL.CSS
+   At page top: nav is transparent and floats over content.
+   On scroll: nav solidifies into a sticky bar with background + shadow.
+   ============================================================================ */
+
+/* ── Base: transparent floating state ── */
+.dash-nav {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid transparent;
+    transition:
+        background-color 0.3s ease,
+        box-shadow 0.3s ease,
+        border-color 0.3s ease,
+        backdrop-filter 0.3s ease;
+    /* Override sidebar-nav.css fixed positioning for desktop */
+    height: auto !important;
+    padding: 20px 0 !important;
+}
+
+/* ── Scrolled state: solid bar ── */
+.dash-nav.nav-scrolled {
+    background-color: var(--nav-bg) !important;
+    box-shadow: 0 2px 16px var(--shadow) !important;
+    border-bottom-color: var(--border-color) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 10px 0 !important;
+}
+
+/* Frosted glass tint in light mode when scrolled */
+.dash-nav.nav-scrolled {
+    background-color: rgba(255, 255, 255, 0.88) !important;
+}
+
+[data-theme="dark"] .dash-nav.nav-scrolled {
+    background-color: rgba(26, 26, 26, 0.88) !important;
+}
+
+/* ── Logo: visible but subtle when transparent ── */
+.dash-nav img[src*="fsh_logo"] {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0.9;
+}
+
+.dash-nav.nav-scrolled img[src*="fsh_logo"] {
+    opacity: 1;
+}
+
+/* ── User display text ── */
+#user-display {
+    transition: opacity 0.3s ease;
+}
+
+/* ── Push main content down so it starts below the floating nav ──
+   The nav is now fixed/floating so we need padding on the container */
+.dashboard-container {
+    padding-top: 90px !important;
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding-top: 80px !important;
+    }
+
+    /* On mobile the nav is a slide-down panel — keep its behaviour
+       but still apply transparent-to-solid on scroll */
+    .dash-nav {
+        /* Mobile: keep as fixed top bar (not the sidebar slide-down) */
+        height: 70px !important;
+        display: flex;
+        align-items: center;
+        padding: 0 5% !important;
+    }
+
+    .dash-nav nav {
+        width: 100%;
+    }
+}
