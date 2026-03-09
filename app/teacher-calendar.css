@@ -1,0 +1,487 @@
+/* ============================================================================
+   TEACHER-CALENDAR.CSS — Personal Calendar Card for Teachers
+   Two-column layout: mini month calendar (left) + upcoming list (right)
+   ============================================================================ */
+
+#tc-section {
+    margin-bottom: 36px;
+}
+
+/* ── Card ── */
+.tc-card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 28px 32px;
+    box-shadow: 0 4px 24px var(--shadow);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.tc-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #081316 0%, #2a3a3f 60%, #22c55e 100%);
+    border-radius: 24px 24px 0 0;
+}
+
+/* ── Card Header ── */
+.tc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.tc-eyebrow {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    margin-bottom: 4px;
+}
+
+.tc-title {
+    font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.tc-view-all {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--secondary-text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+.tc-view-all:hover {
+    color: var(--text-color);
+}
+
+/* ── Two-column body ── */
+.tc-body {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 32px;
+    align-items: start;
+}
+
+/* ── Mini Calendar ── */
+.tc-calendar-wrap {
+    min-width: 220px;
+    max-width: 260px;
+}
+
+.tc-cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.tc-month-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.tc-nav-btn {
+    background: var(--hover-bg);
+    border: none;
+    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-color);
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.tc-nav-btn:hover {
+    background: var(--input-border);
+    color: var(--nav-bg);
+}
+
+.tc-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.tc-day-header {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--secondary-text);
+    padding: 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tc-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-color);
+    position: relative;
+    cursor: default;
+    transition: background 0.15s ease;
+    gap: 2px;
+}
+
+.tc-day--empty {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tc-day--today .tc-day-num {
+    background: var(--text-color);
+    color: var(--nav-bg);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.tc-day--booked {
+    cursor: pointer;
+    background: var(--hover-bg);
+}
+
+.tc-day--booked:hover {
+    background: var(--border-color);
+    transform: scale(1.08);
+}
+
+.tc-day-num {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.tc-dots {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+}
+
+.tc-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+/* Legend */
+.tc-legend {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.tc-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--secondary-text);
+}
+
+/* ── Upcoming List ── */
+.tc-upcoming-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.tc-upcoming-header {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--secondary-text);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 4px;
+}
+
+.tc-upcoming-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--hover-bg);
+    border-radius: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-width: 0;
+}
+
+.tc-upcoming-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 14px var(--shadow-hover);
+}
+
+.tc-upcoming-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    flex-shrink: 0;
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 8px 6px;
+    border: 1px solid var(--border-color);
+}
+
+.tc-upcoming-day-name {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--secondary-text);
+}
+
+.tc-upcoming-day-num {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1.1;
+}
+
+.tc-upcoming-month {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+}
+
+.tc-upcoming-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tc-upcoming-lab {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tc-upcoming-time {
+    font-size: 12px;
+    color: var(--secondary-text);
+    margin-top: 2px;
+}
+
+.tc-upcoming-subject {
+    font-size: 11px;
+    color: var(--secondary-text);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tc-upcoming-status {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Empty state */
+.tc-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--secondary-text);
+    font-size: 14px;
+    padding: 20px 0;
+}
+
+.tc-empty i {
+    font-size: 20px;
+    opacity: 0.35;
+}
+
+/* ── Popover ── */
+.tc-popover {
+    position: absolute;
+    z-index: 3000;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    min-width: 280px;
+    max-width: 340px;
+    animation: tc-pop-in 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+}
+
+@keyframes tc-pop-in {
+    from { opacity: 0; transform: scale(0.92) translateY(-4px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.tc-popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px 12px;
+    background: linear-gradient(135deg, #081316 0%, #2a3a3f 100%);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tc-popover-close {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.tc-popover-close:hover { background: rgba(255,255,255,0.3); }
+
+.tc-popover-body {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tc-popover-item {
+    background: var(--hover-bg);
+    border-radius: 10px;
+    padding: 10px 12px;
+    padding-left: 14px;
+}
+
+.tc-popover-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: var(--text-color);
+}
+
+.tc-popover-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.tc-popover-item-time,
+.tc-popover-item-detail {
+    font-size: 12px;
+    color: var(--secondary-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+}
+
+/* ── Skeleton ── */
+.tc-card--loading {
+    pointer-events: none;
+}
+
+.tc-skeleton {
+    background: var(--hover-bg);
+    border-radius: 8px;
+    animation: tc-shimmer 1.4s ease infinite;
+}
+
+@keyframes tc-shimmer {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+}
+
+.tc-skeleton--title  { height: 28px; width: 200px; margin-bottom: 24px; }
+.tc-skeleton--calendar { height: 220px; flex: 0 0 240px; border-radius: 12px; }
+.tc-skeleton--upcoming { height: 220px; flex: 1; border-radius: 12px; }
+
+.tc-card--loading .tc-body {
+    display: flex;
+    gap: 32px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .tc-body {
+        grid-template-columns: 1fr;
+    }
+
+    .tc-calendar-wrap {
+        max-width: 100%;
+        min-width: unset;
+    }
+
+    .tc-calendar-grid {
+        max-width: 320px;
+        margin: 0 auto;
+    }
+
+    .tc-legend {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .tc-card {
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .tc-upcoming-item {
+        padding: 12px;
+    }
+}
