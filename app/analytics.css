@@ -1,0 +1,397 @@
+/* ============================================================================
+   ANALYTICS.CSS — Admin Dashboard Analytics Card
+   Matches existing FSH app aesthetic (IBM Plex Sans, #081316 palette)
+   ============================================================================ */
+
+#analytics-section {
+    margin-bottom: 36px;
+}
+
+/* ── Card Shell ── */
+.analytics-card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 28px 32px;
+    box-shadow: 0 4px 24px var(--shadow);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Subtle top accent strip */
+.analytics-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #081316 0%, #2a3a3f 60%, #f59e0b 100%);
+    border-radius: 24px 24px 0 0;
+}
+
+/* ── Header ── */
+.analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.analytics-eyebrow {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--secondary-text);
+    margin-bottom: 4px;
+}
+
+.analytics-title {
+    font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.analytics-week-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--secondary-text);
+}
+
+/* Live indicator dot */
+.analytics-live-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    animation: analytics-pulse-dot 2.5s ease infinite;
+}
+
+@keyframes analytics-pulse-dot {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+    70%  { box-shadow: 0 0 0 7px rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+/* ── Stats Grid ── */
+.analytics-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.analytics-stat {
+    background: var(--hover-bg);
+    border-radius: 16px;
+    padding: 18px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.analytics-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px var(--shadow-hover);
+}
+
+.analytics-stat--warning.analytics-stat--active {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+[data-theme="dark"] .analytics-stat--warning.analytics-stat--active {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.analytics-stat-value {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    position: relative;
+}
+
+.analytics-stat--warning.analytics-stat--active .analytics-stat-value {
+    color: #d97706;
+}
+
+[data-theme="dark"] .analytics-stat--warning.analytics-stat--active .analytics-stat-value {
+    color: #fbbf24;
+}
+
+.analytics-stat-unit {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--secondary-text);
+}
+
+.analytics-stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Pending ping animation */
+.analytics-ping {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #f59e0b;
+    border-radius: 50%;
+    margin-left: 6px;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+    animation: analytics-ping 1.5s ease infinite;
+}
+
+@keyframes analytics-ping {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(1.4); }
+}
+
+/* ── Lab Utilization Bars ── */
+.analytics-utilization {
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    margin-bottom: 0;
+}
+
+.analytics-util-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--secondary-text);
+}
+
+.analytics-top-lab {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.analytics-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.analytics-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.analytics-bar-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--secondary-text);
+    width: 60px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.analytics-bar-label--top {
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+.analytics-bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--hover-bg);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.analytics-bar-fill {
+    height: 100%;
+    background: #081316;
+    border-radius: 99px;
+    width: 0;
+    transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] .analytics-bar-fill {
+    background: #ffffff;
+}
+
+.analytics-bar-fill--top {
+    background: linear-gradient(90deg, #081316 0%, #2a3a3f 100%);
+}
+
+[data-theme="dark"] .analytics-bar-fill--top {
+    background: linear-gradient(90deg, #ffffff 0%, #cccccc 100%);
+}
+
+.analytics-bar-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-color);
+    width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ── Empty State ── */
+.analytics-empty {
+    padding: 20px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--secondary-text);
+    font-size: 14px;
+    border-top: 1px solid var(--border-color);
+}
+
+.analytics-empty i {
+    font-size: 18px;
+    opacity: 0.4;
+}
+
+/* ── CTA Banner ── */
+.analytics-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-top: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #92400e;
+    flex-wrap: wrap;
+}
+
+[data-theme="dark"] .analytics-cta {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+}
+
+.analytics-cta i {
+    margin-right: 6px;
+}
+
+.analytics-cta-btn {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.analytics-cta-btn:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+}
+
+/* ── Skeleton Loading ── */
+.analytics-card--loading {
+    pointer-events: none;
+}
+
+.analytics-skeleton {
+    background: var(--hover-bg);
+    border-radius: 8px;
+    animation: analytics-shimmer 1.4s ease infinite;
+}
+
+@keyframes analytics-shimmer {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+}
+
+.analytics-skeleton--title {
+    height: 28px;
+    width: 240px;
+    margin-bottom: 24px;
+    border-radius: 6px;
+}
+
+.analytics-skeleton--value {
+    height: 36px;
+    width: 60%;
+    margin-bottom: 8px;
+    border-radius: 6px;
+}
+
+.analytics-skeleton--label {
+    height: 12px;
+    width: 80%;
+    border-radius: 4px;
+}
+
+.analytics-skeleton--bars {
+    height: 100px;
+    width: 100%;
+    margin-top: 24px;
+    border-radius: 10px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .analytics-card {
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .analytics-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .analytics-stat {
+        padding: 14px 12px;
+    }
+
+    .analytics-cta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .analytics-cta-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .analytics-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
