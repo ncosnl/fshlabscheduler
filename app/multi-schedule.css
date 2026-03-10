@@ -639,3 +639,16 @@
     font-weight: 500;
     color: var(--text-color);
 }
+
+/* ── Partial queued state — slot added for some but not all selected dates ── */
+.time-slot.queued.partial {
+    background: rgba(8, 19, 22, 0.35) !important;
+    color: white !important;
+    border-color: #081316 !important;
+}
+
+[data-theme="dark"] .time-slot.queued.partial {
+    background: rgba(255, 255, 255, 0.35) !important;
+    color: var(--text-color) !important;
+    border-color: rgba(255,255,255,0.6) !important;
+}

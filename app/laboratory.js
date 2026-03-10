@@ -920,12 +920,10 @@ function updateFormState() {
         }
         const selectedInfo = document.getElementById('selected-info');
         if (selectedInfo) {
-            if (selectedDate && selectedDates.has(selectedDate)) {
-                selectedInfo.innerHTML = `<p><strong>${formatDate(selectedDate)}</strong> — tap time slots to queue them</p>`;
-            } else if (selectedDate) {
-                selectedInfo.innerHTML = `<p style="color:#707475;">Viewing <strong>${formatDate(selectedDate)}</strong> — click a date on the calendar to select it</p>`;
+            if (selectedDates.size > 0) {
+                selectedInfo.innerHTML = `<p><strong>${selectedDates.size} date${selectedDates.size > 1 ? 's' : ''} selected</strong> — tap time slots to add them for all selected dates</p>`;
             } else {
-                selectedInfo.innerHTML = "<p style='color:#707475;'>Click dates on the calendar, then tap time slots</p>";
+                selectedInfo.innerHTML = "<p style='color:#707475;'>Select one or more dates on the calendar, then tap time slots</p>";
             }
         }
     } else {
