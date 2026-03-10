@@ -383,6 +383,25 @@ function showInlineToast(msg, type = 'info') {
     setTimeout(() => toast.remove(), 3000);
 }
 
+// Conflict toast — wider, stays longer, supports multi-line
+function showConflictToast(msg, type = 'warn') {
+    const existing = document.getElementById('conflict-toast');
+    if (existing) existing.remove();
+    const bg = type === 'error' ? '#ef4444' : '#f59e0b';
+    const toast = document.createElement('div');
+    toast.id = 'conflict-toast';
+    toast.style.cssText = `
+        position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+        background:${bg}; color:white; padding:13px 22px; border-radius:14px;
+        font-size:13px; font-weight:500; z-index:9999; max-width:460px; width:90%;
+        box-shadow:0 4px 20px rgba(0,0,0,0.25); line-height:1.5;
+        text-align:center; font-family:inherit;
+    `;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
 function renderTimeSlots() {
     const container = document.getElementById('time-slots');
     if (!container) return;
@@ -393,9 +412,20 @@ function renderTimeSlots() {
         const slotEl = document.createElement('div');
         slotEl.className = 'time-slot';
 
-        const isReserved = selectedDate && isSlotReserved(selectedDate, slot);
-        const isQueued   = multiScheduleMode && selectedDate &&
-                           scheduleQueue.some(s => s.date === selectedDate && s.timeSlot === slot);
+        let isReserved, isQueued, isPartial;
+        if (multiScheduleMode) {
+            isReserved = selectedDates.size > 0 &&
+                [...selectedDates].every(d => isSlotReserved(d, slot));
+            const queuedCount = [...selectedDates].filter(d =>
+                scheduleQueue.some(s => s.date === d && s.timeSlot === slot)
+            ).length;
+            isQueued  = selectedDates.size > 0 && queuedCount === selectedDates.size;
+            isPartial = queuedCount > 0 && queuedCount < selectedDates.size;
+        } else {
+            isReserved = selectedDate && isSlotReserved(selectedDate, slot);
+            isQueued   = false;
+            isPartial  = false;
+        }
 
         if (isReserved) {
             slotEl.classList.add('reserved');
@@ -405,6 +435,10 @@ function renderTimeSlots() {
         } else if (isQueued) {
             slotEl.classList.add('queued');
             slotEl.innerHTML = `${slot} <i class="fas fa-check" style="font-size:11px;margin-left:5px;"></i>`;
+            slotEl.onclick = () => selectTimeSlot(slot, slotEl);
+        } else if (isPartial) {
+            slotEl.classList.add('queued', 'partial');
+            slotEl.innerHTML = `${slot} <i class="fas fa-minus" style="font-size:11px;margin-left:5px;"></i>`;
             slotEl.onclick = () => selectTimeSlot(slot, slotEl);
         } else {
             slotEl.textContent = slot;
@@ -416,36 +450,45 @@ function renderTimeSlots() {
 }
 
 function selectTimeSlot(slot, element) {
-    if (!selectedDate) { alert('Please select a date first'); return; }
-
-    if (isSlotReserved(selectedDate, slot)) {
-        alert('This time slot is already reserved. Please choose another time slot.');
-        return;
-    }
-
     if (multiScheduleMode) {
-        // Instant toggle: click to queue, click again to remove
-        const existingIdx = scheduleQueue.findIndex(s => s.date === selectedDate && s.timeSlot === slot);
-        if (existingIdx >= 0) {
-            scheduleQueue.splice(existingIdx, 1);
-            // If no more slots for this date, remove it from selectedDates
-            const stillHasSlots = scheduleQueue.some(s => s.date === selectedDate);
-            if (!stillHasSlots) {
-                selectedDates.delete(selectedDate);
-                // Update calendar highlight — revert to plain selected (active view)
-                document.querySelectorAll('.calendar-day').forEach(el => {
-                    if (el.dataset.date === selectedDate) {
-                        el.classList.remove('multi-selected');
-                        el.classList.add('selected');
-                    }
-                });
-            }
-        } else {
-            // Add slot and mark date as having queued slots
-            selectedDates.add(selectedDate);
-            scheduleQueue.push({ date: selectedDate, timeSlot: slot });
-            // Visually: active date stays as 'selected'; other queued dates are 'multi-selected'
+        if (selectedDates.size === 0) {
+            showInlineToast('Select at least one date on the calendar first.', 'warn');
+            return;
         }
+
+        // If ALL selected dates already have this slot queued — toggle them all off
+        const allQueued = [...selectedDates].every(d =>
+            scheduleQueue.some(s => s.date === d && s.timeSlot === slot)
+        );
+
+        if (allQueued) {
+            scheduleQueue = scheduleQueue.filter(s => !(selectedDates.has(s.date) && s.timeSlot === slot));
+        } else {
+            const conflicted = [];
+            const alreadyIn  = [];
+
+            for (const date of selectedDates) {
+                if (scheduleQueue.some(s => s.date === date && s.timeSlot === slot)) {
+                    alreadyIn.push(date); continue;
+                }
+                if (isSlotReserved(date, slot)) {
+                    conflicted.push(date); continue;
+                }
+                scheduleQueue.push({ date, timeSlot: slot });
+            }
+
+            // Notify about skipped conflicted dates
+            if (conflicted.length > 0) {
+                const dateLabels = conflicted.map(d => formatDate(d)).join(', ');
+                const added = selectedDates.size - conflicted.length - alreadyIn.length;
+                if (added === 0 && alreadyIn.length === 0) {
+                    showConflictToast(`${slot} is already reserved on all selected dates: ${dateLabels}`, 'error');
+                } else {
+                    showConflictToast(`Skipped ${conflicted.length} date${conflicted.length > 1 ? 's' : ''} — already reserved: ${dateLabels}`, 'warn');
+                }
+            }
+        }
+
         renderTimeSlots();
         refreshQueuePanel();
         updateFormState();
@@ -453,6 +496,11 @@ function selectTimeSlot(slot, element) {
     }
 
     // Single mode — normal behaviour
+    if (!selectedDate) { alert('Please select a date first'); return; }
+    if (isSlotReserved(selectedDate, slot)) {
+        alert('This time slot is already reserved. Please choose another time slot.');
+        return;
+    }
     document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
     selectedTimeSlot = slot;
@@ -546,9 +594,40 @@ async function handleBatchSubmit() {
     }
 
     try {
+        // ── Fresh conflict check against latest server data ──
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking conflicts...';
+        await fetchReservations();
+
+        const freshConflicts = scheduleQueue.filter(s => isSlotReserved(s.date, s.timeSlot));
+
+        if (freshConflicts.length > 0) {
+            scheduleQueue = scheduleQueue.filter(s => !isSlotReserved(s.date, s.timeSlot));
+            const conflictLines = freshConflicts.map(s => `• ${formatDate(s.date)} — ${s.timeSlot}`).join('\n');
+
+            if (scheduleQueue.length === 0) {
+                renderTimeSlots();
+                renderQueuePanel();
+                updateFormState();
+                alert(`All queued slots were just reserved by someone else:\n\n${conflictLines}\n\nPlease select different slots.`);
+                return;
+            }
+
+            const proceed = confirm(
+                `${freshConflicts.length} slot${freshConflicts.length > 1 ? 's were' : ' was'} just reserved by someone else and will be removed:\n\n${conflictLines}\n\nSubmit the remaining ${scheduleQueue.length} slot${scheduleQueue.length > 1 ? 's' : ''}?`
+            );
+            if (!proceed) {
+                renderTimeSlots();
+                renderQueuePanel();
+                updateFormState();
+                return;
+            }
+        }
+
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
         const data = await apiCall('/api/reservations/batch', 'POST', {
             lab:         currentLab,
-            slots:       scheduleQueue.map(s => ({ date: s.date, timeSlot: s.timeSlot })), // grouped submission
+            slots:       scheduleQueue.map(s => ({ date: s.date, timeSlot: s.timeSlot })),
             teacherName, subject, grade, students, purpose
         });
 
@@ -921,9 +1000,9 @@ function updateFormState() {
         const selectedInfo = document.getElementById('selected-info');
         if (selectedInfo) {
             if (selectedDates.size > 0) {
-                selectedInfo.innerHTML = `<p><strong>${selectedDates.size} date${selectedDates.size > 1 ? 's' : ''} selected</strong> — tap time slots to add them for all selected dates</p>`;
+                selectedInfo.innerHTML = `<p><strong>${selectedDates.size} date${selectedDates.size > 1 ? 's' : ''} selected</strong> — tap any time slot to queue it across all selected dates</p>`;
             } else {
-                selectedInfo.innerHTML = "<p style='color:#707475;'>Select one or more dates on the calendar, then tap time slots</p>";
+                selectedInfo.innerHTML = "<p style='color:var(--secondary-text);'>Select one or more dates on the calendar, then tap time slots to queue them</p>";
             }
         }
     } else {
@@ -1271,7 +1350,6 @@ function renderMonthlyView() {
         if (isToday) dayEl.classList.add('today');
         if (!multiScheduleMode && dateStr === selectedDate) dayEl.classList.add('selected');
         if (multiScheduleMode && selectedDates.has(dateStr)) dayEl.classList.add('multi-selected');
-        if (multiScheduleMode && dateStr === selectedDate) { dayEl.classList.remove('multi-selected'); dayEl.classList.add('selected'); }
         if (hasReservations(dateStr)) dayEl.classList.add('has-reservations');
 
         if (role === 'Admin') {
@@ -1394,34 +1472,22 @@ function renderDailyView() {
 
 function handleDateSelect(dateStr, dayEl) {
     if (multiScheduleMode) {
-        // Just switch the active date — time slots below update to show this date.
-        // Dates are highlighted (multi-selected) only when they have queued slots.
-        // Clicking a date does NOT remove its slots; only the X button does that.
-        selectedDate     = dateStr;
-        selectedTimeSlot = null;
-
-        // Update the "active" visual: un-highlight non-queued selected marker,
-        // highlight the newly clicked one temporarily so the user knows where they are.
-        document.querySelectorAll('.calendar-day').forEach(el => {
-            const d = el.dataset.date;
-            if (d && selectedDates.has(d)) {
-                el.classList.add('multi-selected');
-                el.classList.remove('selected');
-            } else {
-                el.classList.remove('multi-selected', 'selected');
-            }
-        });
-        // Mark active date distinctly (use selected class so it stands out)
-        dayEl.classList.add('selected');
-        dayEl.classList.remove('multi-selected');
-
+        // Purely toggle date — no selectedDate, no time slot reset
+        if (selectedDates.has(dateStr)) {
+            selectedDates.delete(dateStr);
+            scheduleQueue = scheduleQueue.filter(s => s.date !== dateStr);
+            dayEl.classList.remove('multi-selected');
+        } else {
+            selectedDates.add(dateStr);
+            dayEl.classList.add('multi-selected');
+        }
         renderTimeSlots();
         renderQueuePanel();
         updateFormState();
         return;
     }
 
-    // Single mode — normal behaviour
+    // Single mode
     document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
     dayEl.classList.add('selected');
     selectedDate     = dateStr;
