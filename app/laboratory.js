@@ -18,16 +18,10 @@ let reservationsCache = []; // local cache updated by polling
 let pollingInterval = null;
 let adminSelectedDate = null; // tracks which date admin is viewing (null = all)
 
-// ── Batch scheduling state ───────────────────────────────────────────────────
-let batchMode        = false;   // is the repeat toggle on?
-let batchDates       = [];      // final list of dates to book
-let batchRepeatType  = 'custom'; // 'custom' | 'weekly' | 'weekdays' | 'daily'
-let batchCustomDates = [];      // dates picked in custom mode
-let batchWeekdays    = [];      // 0-6 for weekday mode
-let batchRangeStart  = '';
-let batchRangeEnd    = '';
-let batchWeeklyStart = '';
-let batchWeeklyCount = 4;
+// Multi-select state (teachers only)
+let multiSelectMode   = false;
+let selectedDates     = []; // array of date strings when multiSelectMode is on
+let selectedTimeSlots = []; // array of time slot strings when multiSelectMode is on
 
 // Time slots available for reservation
 const TIME_SLOTS = [
@@ -209,364 +203,39 @@ function initializeUserView() {
     document.getElementById('user-calendar-controls').style.display  = 'flex';
     document.getElementById('admin-calendar-controls').style.display = 'none';
 
+    // Inject multi-select toggle next to the calendar title
+    const calendarTitleEl = document.getElementById('calendar-title');
+    if (calendarTitleEl && !document.getElementById('multi-select-toggle-wrap')) {
+        const wrap = document.createElement('label');
+        wrap.id = 'multi-select-toggle-wrap';
+        wrap.title = 'Multi-select: pick multiple dates and time slots';
+        wrap.style.cssText = `
+            display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+            font-size:12px; font-weight:600; color:var(--secondary-text);
+            user-select:none; margin-left:12px; vertical-align:middle;
+        `;
+        wrap.innerHTML = `
+            <div id="ms-toggle-track" style="
+                width:36px; height:20px; border-radius:10px; background:var(--input-border);
+                position:relative; transition:background 0.2s; flex-shrink:0;">
+                <div id="ms-toggle-thumb" style="
+                    position:absolute; top:3px; left:3px; width:14px; height:14px;
+                    border-radius:50%; background:white; transition:left 0.2s;
+                    box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>
+            </div>
+            <span id="ms-toggle-label">Multi-select</span>
+        `;
+        wrap.addEventListener('click', toggleMultiSelectMode);
+        calendarTitleEl.parentNode && calendarTitleEl.parentNode.style
+            ? calendarTitleEl.insertAdjacentElement('afterend', wrap)
+            : calendarTitleEl.parentNode.appendChild(wrap);
+    }
+
     renderTimeSlots();
     renderMyReservations();
 
     document.getElementById('reservation-form')
         ?.addEventListener('submit', handleReservationSubmit);
-
-    // Inject the repeat/batch toggle section below the existing form
-    injectBatchSchedulingUI();
-}
-
-// ============================================================================
-// BATCH SCHEDULING UI
-// ============================================================================
-
-function injectBatchSchedulingUI() {
-    const form = document.getElementById('reservation-form');
-    if (!form) return;
-
-    const section = document.createElement('div');
-    section.id = 'batch-scheduling-section';
-    section.style.cssText = 'margin-top:6px;';
-
-    section.innerHTML = `
-        <!-- Repeat toggle -->
-        <div style="display:flex; align-items:center; gap:10px; padding:14px 0 10px; border-top:1px solid var(--input-border); margin-top:4px;">
-            <label class="batch-toggle-wrap" style="display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;">
-                <div class="batch-toggle" id="batch-toggle" onclick="toggleBatchMode()" style="
-                    width:44px; height:24px; border-radius:12px; background:var(--input-border);
-                    position:relative; transition:background 0.2s; cursor:pointer; flex-shrink:0;">
-                    <div id="batch-thumb" style="
-                        position:absolute; top:3px; left:3px; width:18px; height:18px;
-                        border-radius:50%; background:white; transition:left 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.3);
-                    "></div>
-                </div>
-                <span style="font-size:14px; font-weight:600; color:var(--text-color);">
-                    <i class="fas fa-calendar-week" style="margin-right:6px; color:#6b7280;"></i>Repeat / Mass Schedule
-                </span>
-            </label>
-        </div>
-
-        <!-- Repeat options panel (hidden by default) -->
-        <div id="batch-options-panel" style="display:none; flex-direction:column; gap:14px; padding:16px; background:var(--hover-bg); border-radius:12px; margin-bottom:10px;">
-
-            <!-- Mode tabs -->
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                ${['custom','weekdays','weekly','daily'].map(m => `
-                    <button type="button" id="batch-tab-${m}" onclick="setBatchRepeatType('${m}')" style="
-                        padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600;
-                        border:1.5px solid var(--input-border); cursor:pointer; transition:all 0.15s;
-                        background:transparent; color:var(--secondary-text);">
-                        ${ m==='custom' ? '📅 Custom dates'
-                         : m==='weekdays' ? '📆 Days of week'
-                         : m==='weekly' ? '🔁 Weekly repeat'
-                         : '📋 Daily range' }
-                    </button>`).join('')}
-            </div>
-
-            <!-- Custom dates picker -->
-            <div id="batch-panel-custom" style="display:flex; flex-direction:column; gap:10px;">
-                <label style="font-size:12px; font-weight:600; color:var(--secondary-text); text-transform:uppercase; letter-spacing:0.5px;">Pick individual dates</label>
-                <input type="date" id="batch-custom-picker" style="
-                    padding:9px 12px; border-radius:8px; border:1.5px solid var(--input-border);
-                    background:var(--card-bg); color:var(--text-color); font-size:14px; width:100%; box-sizing:border-box;"
-                    onchange="addBatchCustomDate(this.value); this.value='';">
-                <div id="batch-custom-chips" style="display:flex; flex-wrap:wrap; gap:6px; min-height:28px;"></div>
-            </div>
-
-            <!-- Days of week picker -->
-            <div id="batch-panel-weekdays" style="display:none; flex-direction:column; gap:10px;">
-                <label style="font-size:12px; font-weight:600; color:var(--secondary-text); text-transform:uppercase; letter-spacing:0.5px;">Select days & date range</label>
-                <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                    ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d,i) => `
-                        <button type="button" id="wd-${i}" onclick="toggleWeekday(${i})" style="
-                            width:42px; height:42px; border-radius:50%; border:1.5px solid var(--input-border);
-                            background:transparent; color:var(--secondary-text); cursor:pointer;
-                            font-size:12px; font-weight:600; transition:all 0.15s;">${d}</button>`).join('')}
-                </div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <div style="flex:1; min-width:120px;">
-                        <label style="font-size:11px; color:var(--secondary-text);">From</label>
-                        <input type="date" id="batch-wd-start" style="
-                            width:100%; padding:8px 10px; border-radius:8px;
-                            border:1.5px solid var(--input-border); background:var(--card-bg);
-                            color:var(--text-color); font-size:13px; box-sizing:border-box;"
-                            onchange="batchRangeStart=this.value; rebuildBatchDates();">
-                    </div>
-                    <div style="flex:1; min-width:120px;">
-                        <label style="font-size:11px; color:var(--secondary-text);">To</label>
-                        <input type="date" id="batch-wd-end" style="
-                            width:100%; padding:8px 10px; border-radius:8px;
-                            border:1.5px solid var(--input-border); background:var(--card-bg);
-                            color:var(--text-color); font-size:13px; box-sizing:border-box;"
-                            onchange="batchRangeEnd=this.value; rebuildBatchDates();">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Weekly repeat picker -->
-            <div id="batch-panel-weekly" style="display:none; flex-direction:column; gap:10px;">
-                <label style="font-size:12px; font-weight:600; color:var(--secondary-text); text-transform:uppercase; letter-spacing:0.5px;">Repeat weekly starting from</label>
-                <input type="date" id="batch-weekly-start" style="
-                    padding:9px 12px; border-radius:8px; border:1.5px solid var(--input-border);
-                    background:var(--card-bg); color:var(--text-color); font-size:14px; width:100%; box-sizing:border-box;"
-                    onchange="batchWeeklyStart=this.value; rebuildBatchDates();">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label style="font-size:12px; color:var(--secondary-text); white-space:nowrap;">Number of weeks:</label>
-                    <input type="number" id="batch-weekly-count" value="4" min="1" max="20" style="
-                        width:70px; padding:8px; border-radius:8px; border:1.5px solid var(--input-border);
-                        background:var(--card-bg); color:var(--text-color); font-size:14px; text-align:center;"
-                        onchange="batchWeeklyCount=parseInt(this.value)||4; rebuildBatchDates();">
-                </div>
-            </div>
-
-            <!-- Daily range picker -->
-            <div id="batch-panel-daily" style="display:none; flex-direction:column; gap:10px;">
-                <label style="font-size:12px; font-weight:600; color:var(--secondary-text); text-transform:uppercase; letter-spacing:0.5px;">Date range (every day)</label>
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <div style="flex:1; min-width:120px;">
-                        <label style="font-size:11px; color:var(--secondary-text);">From</label>
-                        <input type="date" id="batch-daily-start" style="
-                            width:100%; padding:8px 10px; border-radius:8px;
-                            border:1.5px solid var(--input-border); background:var(--card-bg);
-                            color:var(--text-color); font-size:13px; box-sizing:border-box;"
-                            onchange="batchRangeStart=this.value; rebuildBatchDates();">
-                    </div>
-                    <div style="flex:1; min-width:120px;">
-                        <label style="font-size:11px; color:var(--secondary-text);">To</label>
-                        <input type="date" id="batch-daily-end" style="
-                            width:100%; padding:8px 10px; border-radius:8px;
-                            border:1.5px solid var(--input-border); background:var(--card-bg);
-                            color:var(--text-color); font-size:13px; box-sizing:border-box;"
-                            onchange="batchRangeEnd=this.value; rebuildBatchDates();">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Preview of generated dates -->
-            <div id="batch-dates-preview" style="display:none; flex-direction:column; gap:6px;">
-                <label style="font-size:12px; font-weight:600; color:var(--secondary-text); text-transform:uppercase; letter-spacing:0.5px;">
-                    Dates to book (<span id="batch-date-count">0</span>)
-                </label>
-                <div id="batch-date-chips" style="display:flex; flex-wrap:wrap; gap:6px; max-height:120px; overflow-y:auto;"></div>
-            </div>
-        </div>
-
-        <!-- Conflict warning modal -->
-        <div id="batch-conflict-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-            background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
-            <div style="background:var(--card-bg); border-radius:20px; max-width:480px; width:100%; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-                <h3 style="margin:0 0 10px; color:var(--text-color); display:flex; align-items:center; gap:8px;">
-                    <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i> Scheduling Conflicts Found
-                </h3>
-                <p style="font-size:14px; color:var(--secondary-text); margin:0 0 12px;">
-                    The following dates are already taken for this time slot. Do you want to skip them and book the rest?
-                </p>
-                <div id="batch-conflict-list" style="background:var(--hover-bg); border-radius:10px; padding:12px;
-                    margin-bottom:16px; max-height:180px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:6px;"></div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button type="button" onclick="closeBatchConflictModal()" style="
-                        padding:10px 18px; border-radius:20px; border:1.5px solid var(--input-border);
-                        background:transparent; color:var(--text-color); cursor:pointer; font-size:14px; font-weight:600;">
-                        Cancel
-                    </button>
-                    <button type="button" id="batch-conflict-proceed" onclick="proceedWithoutConflicts()" style="
-                        padding:10px 20px; border-radius:20px; border:none;
-                        background:#081316; color:white; cursor:pointer; font-size:14px; font-weight:600;">
-                        Skip & Book Rest
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Insert before the submit button row
-    const submitRow = form.querySelector('.form-actions') || form.lastElementChild;
-    form.insertBefore(section, submitRow);
-
-    setBatchRepeatType('custom'); // init first tab
-}
-
-// ── Batch mode helpers ────────────────────────────────────────────────────────
-
-function toggleBatchMode() {
-    batchMode = !batchMode;
-    const toggle = document.getElementById('batch-toggle');
-    const thumb  = document.getElementById('batch-thumb');
-    const panel  = document.getElementById('batch-options-panel');
-
-    if (batchMode) {
-        toggle.style.background = '#081316';
-        thumb.style.left = '23px';
-        panel.style.display = 'flex';
-        batchDates = [];
-    } else {
-        toggle.style.background = 'var(--input-border)';
-        thumb.style.left = '3px';
-        panel.style.display = 'none';
-        batchDates = [];
-    }
-    updateFormState();
-}
-
-function setBatchRepeatType(type) {
-    batchRepeatType = type;
-    // Reset range state on mode switch
-    batchRangeStart = ''; batchRangeEnd = '';
-    batchCustomDates = []; batchWeekdays = [];
-
-    ['custom','weekdays','weekly','daily'].forEach(m => {
-        const tab   = document.getElementById(`batch-tab-${m}`);
-        const panel = document.getElementById(`batch-panel-${m}`);
-        if (!tab || !panel) return;
-        const active = m === type;
-        tab.style.background    = active ? '#081316' : 'transparent';
-        tab.style.color         = active ? 'white'   : 'var(--secondary-text)';
-        tab.style.borderColor   = active ? '#081316' : 'var(--input-border)';
-        panel.style.display     = active ? 'flex'    : 'none';
-    });
-
-    // Clear input fields on switch
-    ['batch-wd-start','batch-wd-end','batch-weekly-start','batch-daily-start','batch-daily-end'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    const wc = document.getElementById('batch-weekly-count');
-    if (wc) { wc.value = 4; batchWeeklyCount = 4; }
-    document.querySelectorAll('[id^="wd-"]').forEach(btn => {
-        btn.style.background = 'transparent';
-        btn.style.color      = 'var(--secondary-text)';
-        btn.style.borderColor= 'var(--input-border)';
-    });
-    renderBatchChips([]);
-    batchDates = [];
-    updateFormState();
-}
-
-function toggleWeekday(day) {
-    const btn = document.getElementById(`wd-${day}`);
-    if (batchWeekdays.includes(day)) {
-        batchWeekdays = batchWeekdays.filter(d => d !== day);
-        btn.style.background  = 'transparent';
-        btn.style.color       = 'var(--secondary-text)';
-        btn.style.borderColor = 'var(--input-border)';
-    } else {
-        batchWeekdays.push(day);
-        btn.style.background  = '#081316';
-        btn.style.color       = 'white';
-        btn.style.borderColor = '#081316';
-    }
-    rebuildBatchDates();
-}
-
-function addBatchCustomDate(val) {
-    if (!val || batchCustomDates.includes(val)) return;
-    batchCustomDates.push(val);
-    batchCustomDates.sort();
-    rebuildBatchDates();
-}
-
-function removeBatchCustomDate(val) {
-    batchCustomDates = batchCustomDates.filter(d => d !== val);
-    rebuildBatchDates();
-}
-
-function rebuildBatchDates() {
-    let dates = [];
-
-    if (batchRepeatType === 'custom') {
-        dates = [...batchCustomDates];
-
-    } else if (batchRepeatType === 'weekdays') {
-        if (batchWeekdays.length > 0 && batchRangeStart && batchRangeEnd) {
-            const cur = new Date(batchRangeStart + 'T00:00:00');
-            const end = new Date(batchRangeEnd   + 'T00:00:00');
-            while (cur <= end) {
-                if (batchWeekdays.includes(cur.getDay())) dates.push(toDateStr(cur));
-                cur.setDate(cur.getDate() + 1);
-            }
-        }
-
-    } else if (batchRepeatType === 'weekly') {
-        if (batchWeeklyStart) {
-            const cur = new Date(batchWeeklyStart + 'T00:00:00');
-            for (let i = 0; i < batchWeeklyCount; i++) {
-                dates.push(toDateStr(cur));
-                cur.setDate(cur.getDate() + 7);
-            }
-        }
-
-    } else if (batchRepeatType === 'daily') {
-        if (batchRangeStart && batchRangeEnd) {
-            const cur = new Date(batchRangeStart + 'T00:00:00');
-            const end = new Date(batchRangeEnd   + 'T00:00:00');
-            while (cur <= end) {
-                dates.push(toDateStr(cur));
-                cur.setDate(cur.getDate() + 1);
-            }
-        }
-    }
-
-    batchDates = dates;
-    renderBatchChips(dates);
-    updateFormState();
-}
-
-function toDateStr(dateObj) {
-    const y = dateObj.getFullYear();
-    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const d = String(dateObj.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
-
-function renderBatchChips(dates) {
-    // Custom mode chips go in #batch-custom-chips
-    if (batchRepeatType === 'custom') {
-        const container = document.getElementById('batch-custom-chips');
-        if (container) {
-            container.innerHTML = dates.map(d => `
-                <span style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
-                    background:#081316; color:white; border-radius:20px; font-size:12px; font-weight:500;">
-                    ${formatDate(d)}
-                    <button type="button" onclick="removeBatchCustomDate('${d}')" style="
-                        background:none; border:none; color:rgba(255,255,255,0.7); cursor:pointer;
-                        padding:0; font-size:14px; line-height:1; margin-left:2px;">&times;</button>
-                </span>
-            `).join('');
-        }
-    }
-
-    // Computed dates preview (all modes except custom, shown below the mode panel)
-    const preview   = document.getElementById('batch-dates-preview');
-    const chipsEl   = document.getElementById('batch-date-chips');
-    const countEl   = document.getElementById('batch-date-count');
-    if (!preview || !chipsEl || !countEl) return;
-
-    if (batchRepeatType !== 'custom' && dates.length > 0) {
-        preview.style.display = 'flex';
-        countEl.textContent   = dates.length;
-        chipsEl.innerHTML = dates.map(d => `
-            <span style="padding:3px 10px; background:var(--card-bg); border:1.5px solid var(--input-border);
-                border-radius:20px; font-size:12px; color:var(--text-color);">${formatDate(d)}</span>
-        `).join('');
-    } else {
-        preview.style.display = 'none';
-    }
-}
-
-// ── Conflict modal ─────────────────────────────────────────────────────────
-
-let _pendingDatesAfterConflict = [];
-
-function closeBatchConflictModal() {
-    document.getElementById('batch-conflict-modal').style.display = 'none';
-}
-
-function proceedWithoutConflicts() {
-    closeBatchConflictModal();
-    submitBatchReservations(_pendingDatesAfterConflict);
 }
 
 function renderTimeSlots() {
@@ -575,19 +244,33 @@ function renderTimeSlots() {
 
     container.innerHTML = '';
 
+    // In multi-select mode, reserved status is checked against the FIRST selected date
+    // (slots show as reserved if taken on any of the selected dates)
+    const checkDate = multiSelectMode ? selectedDates[0] : selectedDate;
+
     TIME_SLOTS.forEach(slot => {
         const slotEl = document.createElement('div');
         slotEl.className = 'time-slot';
 
-        const isReserved = selectedDate && isSlotReserved(selectedDate, slot);
+        // In multi mode: slot is "taken" on at least one selected date
+        const isReserved = multiSelectMode
+            ? selectedDates.some(d => isSlotReserved(d, slot))
+            : (checkDate && isSlotReserved(checkDate, slot));
 
-        if (isReserved) {
+        if (isReserved && !multiSelectMode) {
             slotEl.classList.add('reserved');
             slotEl.innerHTML = `${slot} <span style="font-size:11px;color:#ef4444;">(Reserved)</span>`;
             slotEl.style.cursor  = 'not-allowed';
             slotEl.style.opacity = '0.6';
         } else {
-            slotEl.textContent = slot;
+            if (multiSelectMode && selectedTimeSlots.includes(slot)) slotEl.classList.add('selected');
+            if (!multiSelectMode && slot === selectedTimeSlot) slotEl.classList.add('selected');
+            if (isReserved && multiSelectMode) {
+                // Show warning but still allow selection in multi mode (conflict warning shown on submit)
+                slotEl.innerHTML = `${slot} <span style="font-size:11px;color:#f59e0b;">⚠ conflict on some dates</span>`;
+            } else {
+                slotEl.textContent = slot;
+            }
             slotEl.onclick = () => selectTimeSlot(slot, slotEl);
         }
 
@@ -596,6 +279,22 @@ function renderTimeSlots() {
 }
 
 function selectTimeSlot(slot, element) {
+    if (multiSelectMode) {
+        if (selectedDates.length === 0) { alert('Please select at least one date first.'); return; }
+        // Toggle slot in/out of selectedTimeSlots
+        const idx = selectedTimeSlots.indexOf(slot);
+        if (idx === -1) {
+            selectedTimeSlots.push(slot);
+            element.classList.add('selected');
+        } else {
+            selectedTimeSlots.splice(idx, 1);
+            element.classList.remove('selected');
+        }
+        updateFormState();
+        return;
+    }
+
+    // Single-select mode (original behaviour)
     if (!selectedDate) { alert('Please select a date first'); return; }
 
     if (isSlotReserved(selectedDate, slot)) {
@@ -612,54 +311,87 @@ function selectTimeSlot(slot, element) {
 async function handleReservationSubmit(e) {
     e.preventDefault();
 
-    // ── Batch mode ──────────────────────────────────────────────────────────
-    if (batchMode) {
-        if (batchDates.length === 0) {
-            alert('Please add at least one date for your batch reservation.');
-            return;
-        }
-        if (!selectedTimeSlot) {
-            alert('Please select a time slot first.');
+    // ── Multi-select mode ────────────────────────────────────────────────────
+    if (multiSelectMode) {
+        if (selectedDates.length === 0 || selectedTimeSlots.length === 0) {
+            alert('Please select at least one date and one time slot.');
             return;
         }
 
         const submitBtn = document.getElementById('submit-reservation');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Checking conflicts...'; }
 
-        try {
-            await fetchReservations();
-            const conflicts = batchDates.filter(d => isSlotReserved(d, selectedTimeSlot));
-            const available = batchDates.filter(d => !isSlotReserved(d, selectedTimeSlot));
+        await fetchReservations();
 
-            if (conflicts.length > 0) {
-                const conflictList = document.getElementById('batch-conflict-list');
-                conflictList.innerHTML = conflicts.map(d =>
-                    `<span style="padding:3px 10px; background:#fef3c7; color:#92400e; border-radius:20px; font-size:12px; font-weight:500;">${formatDate(d)}</span>`
-                ).join('');
-                _pendingDatesAfterConflict = available;
-                document.getElementById('batch-conflict-modal').style.display = 'flex';
-                const proceedBtn = document.getElementById('batch-conflict-proceed');
-                if (available.length === 0) {
-                    proceedBtn.style.display = 'none';
+        // Build full date × slot matrix
+        const allCombos    = [];
+        const conflicting  = [];
+        for (const d of selectedDates) {
+            for (const slot of selectedTimeSlots) {
+                if (isSlotReserved(d, slot)) {
+                    conflicting.push(`${formatDate(d)} — ${slot}`);
                 } else {
-                    proceedBtn.style.display = 'inline-flex';
+                    allCombos.push({ date: d, timeSlot: slot });
                 }
+            }
+        }
+
+        if (conflicting.length > 0) {
+            const available = allCombos.length;
+            const msg = conflicting.length === selectedDates.length * selectedTimeSlots.length
+                ? `All selected combinations are already taken:\n\n${conflicting.join('\n')}`
+                : `${conflicting.length} combination${conflicting.length > 1 ? 's are' : ' is'} already taken and will be skipped:\n\n${conflicting.join('\n')}\n\nProceed with the remaining ${available}?`;
+
+            if (conflicting.length === selectedDates.length * selectedTimeSlots.length) {
+                alert(msg);
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation'; }
                 return;
             }
-            await submitBatchReservations(batchDates);
+            if (!confirm(msg)) {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> Submit ${available} Reservation${available !== 1 ? 's' : ''}`; }
+                return;
+            }
+        }
+
+        if (allCombos.length === 0) {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation'; }
+            return;
+        }
+
+        if (submitBtn) submitBtn.textContent = `Submitting ${allCombos.length}...`;
+
+        try {
+            const commonFields = {
+                lab:         currentLab,
+                teacherName: document.getElementById('teacher-name').value,
+                subject:     document.getElementById('subject').value,
+                grade:       document.getElementById('grade').value,
+                students:    document.getElementById('students').value,
+                purpose:     document.getElementById('purpose').value,
+                dates:       allCombos.map(c => c.date),
+                timeSlots:   allCombos.map(c => c.timeSlot)
+            };
+
+            const data = await apiCall('/api/reservations', 'POST', commonFields);
+
+            if (!data.success) { alert(data.message); return; }
+
+            const count = data.ids?.length || allCombos.length;
+            alert(`✅ ${count} reservation${count !== 1 ? 's' : ''} submitted!\n\nYour request${count !== 1 ? 's have' : ' has'} been sent to the administrator for approval.`);
+            resetReservationForm();
+            await fetchReservations();
+            renderCalendar();
+
         } catch (err) {
             alert('Error: ' + (err.message || 'Could not reach the server.'));
             console.error(err);
         } finally {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation';
-            }
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation'; }
         }
         return;
     }
 
-    // ── Single reservation (original logic) ────────────────────────────────
+    // ── Single-select mode (original) ────────────────────────────────────────
     if (!selectedDate || !selectedTimeSlot) {
         alert('Please select both date and time slot');
         return;
@@ -707,79 +439,77 @@ async function handleReservationSubmit(e) {
     }
 }
 
-async function submitBatchReservations(dates) {
-    if (dates.length === 0) {
-        alert('No available dates to book after removing conflicts.');
-        return;
-    }
+function resetReservationForm() {
+    document.getElementById('reservation-form')?.reset();
+    selectedDate      = null;
+    selectedTimeSlot  = null;
+    selectedDates     = [];
+    selectedTimeSlots = [];
+    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
+    updateFormState();
+}
 
-    const submitBtn = document.getElementById('submit-reservation');
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
+// ============================================================================
+// MULTI-SELECT MODE
+// ============================================================================
 
-    try {
-        const data = await apiCall('/api/reservations', 'POST', {
-            lab:         currentLab,
-            dates:       dates,
-            timeSlot:    selectedTimeSlot,
-            teacherName: document.getElementById('teacher-name').value,
-            subject:     document.getElementById('subject').value,
-            grade:       document.getElementById('grade').value,
-            students:    document.getElementById('students').value,
-            purpose:     document.getElementById('purpose').value
-        });
+function toggleMultiSelectMode() {
+    multiSelectMode   = !multiSelectMode;
+    selectedDates     = [];
+    selectedTimeSlots = [];
+    selectedDate      = null;
+    selectedTimeSlot  = null;
 
-        if (!data.success) {
-            if (data.conflicts && data.conflicts.length > 0) {
-                const available = dates.filter(d => !data.conflicts.includes(d));
-                const conflictList = document.getElementById('batch-conflict-list');
-                conflictList.innerHTML = data.conflicts.map(d =>
-                    `<span style="padding:3px 10px; background:#fef3c7; color:#92400e; border-radius:20px; font-size:12px; font-weight:500;">${formatDate(d)}</span>`
-                ).join('');
-                _pendingDatesAfterConflict = available;
-                document.getElementById('batch-conflict-modal').style.display = 'flex';
-            } else {
-                alert(data.message);
-            }
-            return;
-        }
+    // Update toggle UI
+    const track = document.getElementById('ms-toggle-track');
+    const thumb = document.getElementById('ms-toggle-thumb');
+    const label = document.getElementById('ms-toggle-label');
+    if (track) track.style.background = multiSelectMode ? '#081316' : 'var(--input-border)';
+    if (thumb) thumb.style.left = multiSelectMode ? '19px' : '3px';
+    if (label) label.textContent = multiSelectMode ? 'Multi-select ON' : 'Multi-select';
 
-        const count = data.ids?.length || dates.length;
-        alert(`✅ ${count} reservation${count > 1 ? 's' : ''} submitted!\n\nYour request${count > 1 ? 's have' : ' has'} been sent to the administrator for approval.`);
-        resetReservationForm();
-        await fetchReservations();
-        renderCalendar();
+    // Update calendar title hint
+    const calTitle = document.getElementById('calendar-title');
+    if (calTitle) calTitle.textContent = multiSelectMode ? 'Select Dates (tap to toggle)' : 'Select Date';
 
-    } catch (err) {
-        alert('Error: ' + (err.message || 'Could not reach the server.'));
-        console.error(err);
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation';
-        }
-    }
+    // Deselect everything visually
+    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
+
+    renderTimeSlots();
+    updateFormState();
 }
 
 
-function resetReservationForm() {
-    document.getElementById('reservation-form')?.reset();
-    selectedDate     = null;
-    selectedTimeSlot = null;
-    // Reset batch state too
-    batchMode        = false;
-    batchDates       = [];
-    batchCustomDates = [];
-    batchWeekdays    = [];
-    batchRangeStart  = '';
-    batchRangeEnd    = '';
-    const toggle = document.getElementById('batch-toggle');
-    const thumb  = document.getElementById('batch-thumb');
-    const panel  = document.getElementById('batch-options-panel');
-    if (toggle) toggle.style.background = 'var(--input-border)';
-    if (thumb)  thumb.style.left = '3px';
-    if (panel)  panel.style.display = 'none';
+// ============================================================================
+// MULTI-SELECT MODE
+// ============================================================================
+
+function toggleMultiSelectMode() {
+    multiSelectMode   = !multiSelectMode;
+    selectedDates     = [];
+    selectedTimeSlots = [];
+    selectedDate      = null;
+    selectedTimeSlot  = null;
+
+    // Update toggle UI
+    const track = document.getElementById('ms-toggle-track');
+    const thumb = document.getElementById('ms-toggle-thumb');
+    const label = document.getElementById('ms-toggle-label');
+    if (track) track.style.background = multiSelectMode ? '#081316' : 'var(--input-border)';
+    if (thumb) thumb.style.left = multiSelectMode ? '19px' : '3px';
+    if (label) label.textContent = multiSelectMode ? 'Multi-select ON' : 'Multi-select';
+
+    // Update calendar title hint
+    const calTitle = document.getElementById('calendar-title');
+    if (calTitle) calTitle.textContent = multiSelectMode ? 'Select Dates (tap to toggle)' : 'Select Date';
+
+    // Clear visual selections
     document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
     document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
+
+    renderTimeSlots();
     updateFormState();
 }
 
@@ -1045,36 +775,39 @@ async function handleEditSubmit(e, reservationId) {
 }
 
 function updateFormState() {
-    const submitBtn = document.getElementById('submit-reservation');
+    const submitBtn  = document.getElementById('submit-reservation');
+    const selectedInfo = document.getElementById('selected-info');
 
-    if (batchMode) {
-        const ready = batchDates.length > 0 && !!selectedTimeSlot;
+    if (multiSelectMode) {
+        const dateCount = selectedDates.length;
+        const slotCount = selectedTimeSlots.length;
+        const total     = dateCount * slotCount;
+        const ready     = dateCount > 0 && slotCount > 0;
+
         if (submitBtn) {
             submitBtn.disabled = !ready;
             submitBtn.innerHTML = ready
-                ? `<i class="fas fa-paper-plane"></i> Submit ${batchDates.length} Reservation${batchDates.length > 1 ? 's' : ''}`
+                ? `<i class="fas fa-paper-plane"></i> Submit ${total} Reservation${total !== 1 ? 's' : ''}`
                 : '<i class="fas fa-paper-plane"></i> Submit Reservation';
         }
-        const selectedInfo = document.getElementById('selected-info');
+
         if (selectedInfo) {
-            if (selectedTimeSlot) {
+            if (ready) {
                 selectedInfo.innerHTML = `
-                    <p><strong>Time Slot:</strong> ${selectedTimeSlot}</p>
-                    <p><strong>Dates:</strong> ${batchDates.length > 0 ? batchDates.length + ' selected' : 'None yet'}</p>
+                    <p><strong>${dateCount} date${dateCount !== 1 ? 's' : ''}</strong> × <strong>${slotCount} time slot${slotCount !== 1 ? 's' : ''}</strong> = <strong>${total} reservation${total !== 1 ? 's' : ''}</strong></p>
                 `;
             } else {
-                selectedInfo.innerHTML = '<p style="color:#707475;">Please select a time slot for the batch</p>';
+                selectedInfo.innerHTML = '<p style="color:#707475;">Select dates and time slots above</p>';
             }
         }
         return;
     }
 
+    // Single-select mode
     if (submitBtn) {
         submitBtn.disabled = !selectedDate || !selectedTimeSlot;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation';
     }
-
-    const selectedInfo = document.getElementById('selected-info');
     if (selectedInfo) {
         if (selectedDate && selectedTimeSlot) {
             selectedInfo.innerHTML = `
@@ -1533,6 +1266,23 @@ function renderDailyView() {
 }
 
 function handleDateSelect(dateStr, dayEl) {
+    if (multiSelectMode) {
+        // Toggle date in/out of selectedDates
+        const idx = selectedDates.indexOf(dateStr);
+        if (idx === -1) {
+            selectedDates.push(dateStr);
+            dayEl.classList.add('selected');
+        } else {
+            selectedDates.splice(idx, 1);
+            dayEl.classList.remove('selected');
+        }
+        // Re-render time slots so conflict warnings update
+        renderTimeSlots();
+        updateFormState();
+        return;
+    }
+
+    // Single-select mode (original behaviour)
     document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
     dayEl.classList.add('selected');
     selectedDate     = dateStr;
@@ -1694,11 +1444,3 @@ window.renderReservationsList = renderReservationsList;
 window.openEditModal          = openEditModal;
 window.closeEditModal         = closeEditModal;
 window.viewAllReservations    = viewAllReservations;
-// ── Batch scheduling globals ──────────────────────────────────────────────────
-window.toggleBatchMode          = toggleBatchMode;
-window.setBatchRepeatType       = setBatchRepeatType;
-window.toggleWeekday            = toggleWeekday;
-window.addBatchCustomDate       = addBatchCustomDate;
-window.removeBatchCustomDate    = removeBatchCustomDate;
-window.closeBatchConflictModal  = closeBatchConflictModal;
-window.proceedWithoutConflicts  = proceedWithoutConflicts;
