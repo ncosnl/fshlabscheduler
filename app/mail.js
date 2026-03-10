@@ -589,26 +589,26 @@ async function submitMailCommentModal(reservationId, action) {
         let isGroup  = false;
 
         if (notif) {
-            // Try to find the reservation to check for scheduleGroupId
-            let resData = null;
-            try {
-                resData = await mailApiCall(`/api/reservations?lab=${encodeURIComponent(notif.lab)}`);
-                if (resData.success) {
-                    const res = resData.reservations.find(r => r.id === reservationId);
-                    if (res?.scheduleGroupId) {
-                        endpoint = `/api/reservations/group/${res.scheduleGroupId}`;
-                        isGroup  = true;
-                    }
-                }
-            } catch (_) {}
+            // Multi-schedule notifications store the groupId directly as reservationId.
+            // Detect this via the subject prefix set by the Worker.
+            const isMultiNotif = notif.subject?.includes('Multi-Schedule');
 
-            // If reservationId matches a groupId directly (notification stores groupId)
-            if (!isGroup) {
-                const groupMatch = resData?.reservations?.find(r => r.scheduleGroupId === reservationId);
-                if (groupMatch) {
-                    endpoint = `/api/reservations/group/${reservationId}`;
-                    isGroup  = true;
-                }
+            if (isMultiNotif) {
+                // reservationId IS the groupId — go straight to the group endpoint
+                endpoint = `/api/reservations/group/${reservationId}`;
+                isGroup  = true;
+            } else {
+                // Single reservation — check if it belongs to a group via scheduleGroupId
+                try {
+                    const resData = await mailApiCall(`/api/reservations?lab=${encodeURIComponent(notif.lab)}`);
+                    if (resData.success) {
+                        const res = resData.reservations.find(r => r.id === reservationId);
+                        if (res?.scheduleGroupId) {
+                            endpoint = `/api/reservations/group/${res.scheduleGroupId}`;
+                            isGroup  = true;
+                        }
+                    }
+                } catch (_) {}
             }
         }
 
