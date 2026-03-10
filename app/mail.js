@@ -198,6 +198,24 @@ function createMessageElement(notification) {
 
     const fromName = notification.from.split('@')[0];
     const timeAgo  = getTimeAgo(notification.createdAt);
+    const isBatch  = isBatchNotification(notification);
+
+    // For batch notifications, show a clean slot-count preview instead of raw JSON
+    let previewHtml;
+    if (isBatch) {
+        const slots = parseBatchSlots(notification.message);
+        const previewText = `Multi-schedule: ${slots.length} reservation${slots.length !== 1 ? 's' : ''} for ${notification.lab}`;
+        previewHtml = `
+            <div class="message-preview">
+                ${notification.type === 'request' ? `<strong>From: ${fromName}</strong> — ` : ''}
+                <i class="fas fa-layer-group" style="margin-right:5px; opacity:0.7;"></i>${previewText}
+            </div>`;
+    } else {
+        previewHtml = `
+            <div class="message-preview">
+                ${notification.type === 'request' ? `<strong>From: ${fromName}</strong> — ` : ''}${notification.message}
+            </div>`;
+    }
 
     div.innerHTML = `
         <div class="message-header">
@@ -207,13 +225,14 @@ function createMessageElement(notification) {
             </div>
             <span class="message-time">${timeAgo}</span>
         </div>
-        <div class="message-preview">
-            ${notification.type === 'request' ? `<strong>From: ${fromName}</strong> — ` : ''}${notification.message}
-        </div>
+        ${previewHtml}
         <div class="message-meta">
             <div class="message-meta-item"><i class="fas fa-flask"></i><span>${notification.lab}</span></div>
-            <div class="message-meta-item"><i class="far fa-calendar"></i><span>${formatDate(notification.date)}</span></div>
-            <div class="message-meta-item"><i class="far fa-clock"></i><span>${notification.timeSlot}</span></div>
+            ${isBatch
+                ? `<div class="message-meta-item"><i class="fas fa-layer-group"></i><span>${parseBatchSlots(notification.message).length} slots</span></div>`
+                : `<div class="message-meta-item"><i class="far fa-calendar"></i><span>${formatDate(notification.date)}</span></div>
+                   <div class="message-meta-item"><i class="far fa-clock"></i><span>${notification.timeSlot}</span></div>`
+            }
         </div>
         ${!notification.read ? '<div class="unread-indicator"></div>' : ''}
     `;
@@ -240,11 +259,79 @@ async function openMessage(notificationId) {
     // Find the notification
     if (!notif) { alert('Notification not found.'); return; }
 
-    const role         = localStorage.getItem('fsh_user_role');
-    const detailEl     = document.getElementById('message-detail');
-    const fromName     = notif.from.split('@')[0];
-    const isAdmin      = role === 'Admin';
-    const isPending    = notif.status === 'pending' && notif.type === 'request';
+    const role      = localStorage.getItem('fsh_user_role');
+    const detailEl  = document.getElementById('message-detail');
+    const isAdmin   = role === 'Admin';
+    const isPending = notif.status === 'pending' && notif.type === 'request';
+
+    // ── BATCH render path ─────────────────────────────────────────────────────
+    if (isBatchNotification(notif)) {
+        const slots     = parseBatchSlots(notif.message);
+        const fromName  = notif.from.split('@')[0];
+
+        const slotRows = slots.map((s, i) => `
+            <tr style="border-bottom:1px solid var(--border-color);">
+                <td style="padding:8px 10px; font-size:13px; color:var(--secondary-text);">${i + 1}</td>
+                <td style="padding:8px 10px; font-size:13px;">${formatDate(s.date)}</td>
+                <td style="padding:8px 10px; font-size:13px;">${s.timeSlot}</td>
+            </tr>`).join('');
+
+        const batchAdminActions = isAdmin && isPending ? `
+            <div class="message-actions">
+                <button class="action-btn approve" onclick="openMailApproveModal('${notif.batchId}', true)">
+                    <i class="fas fa-check"></i> Approve All
+                </button>
+                <button class="action-btn reject" onclick="openMailDeclineModal('${notif.batchId}', true)">
+                    <i class="fas fa-times"></i> Decline All
+                </button>
+            </div>
+        ` : '';
+
+        detailEl.innerHTML = `
+            <div class="detail-section">
+                <div class="detail-label">Subject</div>
+                <div class="detail-value" style="font-size:18px; font-weight:600;">${notif.subject}</div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-label">From</div>
+                <div class="detail-value">${fromName}</div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-label">Laboratory</div>
+                <div class="detail-value">${notif.lab}</div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-label">
+                    <i class="fas fa-layer-group" style="margin-right:6px;"></i>
+                    Scheduled Slots (${slots.length})
+                </div>
+                <table style="width:100%; border-collapse:collapse; margin-top:10px; background:var(--hover-bg); border-radius:10px; overflow:hidden;">
+                    <thead>
+                        <tr style="background:rgba(8,19,22,0.07);">
+                            <th style="padding:8px 10px; font-size:11px; text-align:left; color:var(--secondary-text); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">#</th>
+                            <th style="padding:8px 10px; font-size:11px; text-align:left; color:var(--secondary-text); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Date</th>
+                            <th style="padding:8px 10px; font-size:11px; text-align:left; color:var(--secondary-text); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Time Slot</th>
+                        </tr>
+                    </thead>
+                    <tbody>${slotRows}</tbody>
+                </table>
+            </div>
+            <div class="detail-section">
+                <div class="detail-label">Status</div>
+                <div class="detail-item-value">
+                    <span class="message-badge ${notif.status}">${notif.status}</span>
+                </div>
+            </div>
+            ${batchAdminActions}
+        `;
+
+        document.getElementById('message-modal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        return;
+    }
+
+    // ── SINGLE render path (original behaviour) ───────────────────────────────
+    const fromName  = notif.from.split('@')[0];
 
     // Fetch full reservation details if needed
     let reservationDetails = '';
@@ -401,7 +488,7 @@ window.onclick = function(event) {
 // ADMIN ACTIONS
 // ============================================================================
 
-function openMailCommentModal({ reservationId, action }) {
+function openMailCommentModal({ reservationId, action, isBatch = false }) {
     document.getElementById('mail-comment-modal')?.remove();
 
     const isApprove   = action === 'approved';
@@ -454,7 +541,7 @@ function openMailCommentModal({ reservationId, action }) {
                         border:1px solid var(--secondary-text); font-size:14px; font-weight:500;">
                         Cancel
                     </button>
-                    <button id="mail-comment-submit" onclick="submitMailCommentModal('${reservationId}','${action}')" style="
+                    <button id="mail-comment-submit" onclick="submitMailCommentModal('${reservationId}','${action}',${isBatch})" style="
                         flex:1; padding:11px; border-radius:50px; cursor:pointer;
                         background:${accentColor}; color:white; border:none;
                         font-size:14px; font-weight:600; display:flex;
@@ -476,10 +563,10 @@ function closeMailCommentModal() {
     document.getElementById('mail-comment-modal')?.remove();
 }
 
-function openMailApproveModal(id) { openMailCommentModal({ reservationId: id, action: 'approved' }); }
-function openMailDeclineModal(id)  { openMailCommentModal({ reservationId: id, action: 'declined' }); }
+function openMailApproveModal(id, isBatch = false) { openMailCommentModal({ reservationId: id, action: 'approved', isBatch }); }
+function openMailDeclineModal(id, isBatch = false)  { openMailCommentModal({ reservationId: id, action: 'declined', isBatch }); }
 
-async function submitMailCommentModal(reservationId, action) {
+async function submitMailCommentModal(reservationId, action, isBatch = false) {
     const comment   = document.getElementById('mail-comment-input')?.value.trim() || '';
     const submitBtn = document.getElementById('mail-comment-submit');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
@@ -488,7 +575,12 @@ async function submitMailCommentModal(reservationId, action) {
         const body = { status: action };
         if (comment) body.adminComment = comment;
 
-        const data = await mailApiCall(`/api/reservations/${reservationId}`, 'PATCH', body);
+        // Route to batch endpoint when a batchId is supplied
+        const endpoint = isBatch
+            ? `/api/reservations/batch/${reservationId}`
+            : `/api/reservations/${reservationId}`;
+
+        const data = await mailApiCall(endpoint, 'PATCH', body);
         if (!data.success) { alert(data.message); return; }
 
         closeMailCommentModal();
@@ -524,6 +616,37 @@ function filterMessages(filter) {
 
     const filtered = filterNotifications(allNotifications, filter);
     renderMessages(applyMailSearch(filtered));
+}
+
+// ============================================================================
+// BATCH HELPERS
+// ============================================================================
+
+/**
+ * Returns true if the notification represents a multi-slot batch reservation.
+ * Batch notifications store a JSON slot list in the message field.
+ */
+function isBatchNotification(notification) {
+    if (!notification || !notification.message) return false;
+    try {
+        const parsed = JSON.parse(notification.message);
+        return Array.isArray(parsed);
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Parses the JSON slot list stored in a batch notification's message field.
+ * Returns an array of { date, timeSlot } objects, or [] on failure.
+ */
+function parseBatchSlots(message) {
+    try {
+        const parsed = JSON.parse(message);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
 }
 
 // ============================================================================
