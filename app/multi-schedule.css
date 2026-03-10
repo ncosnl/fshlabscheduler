@@ -578,29 +578,17 @@
     color: white !important;
 }
 
-/* ── Multi-selected calendar day ── */
+/* ── Multi-selected calendar day — same style as single mode selected ── */
 .calendar-day.multi-selected {
-    background: #081316 !important;
-    color: white !important;
-    border-radius: 50%;
-    position: relative;
-}
-
-.calendar-day.multi-selected::after {
-    content: '';
-    position: absolute;
-    bottom: 3px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.6);
+    background: #081316;
+    color: white;
+    box-shadow: none;
+    z-index: 1;
 }
 
 [data-theme="dark"] .calendar-day.multi-selected {
-    background: #ffffff !important;
-    color: #081316 !important;
+    background: #ffffff;
+    color: #081316;
 }
 
 /* ── Queue date groups ── */

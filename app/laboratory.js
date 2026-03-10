@@ -348,11 +348,18 @@ function refreshQueuePanel() {
 function removeFromQueue(index) {
     const removed = scheduleQueue[index];
     scheduleQueue.splice(index, 1);
-    // If no more slots for that date, deselect it on the calendar
     if (removed && !scheduleQueue.some(s => s.date === removed.date)) {
         selectedDates.delete(removed.date);
-        renderCalendar();
+        // Update calendar highlight inline without full re-render
+        document.querySelectorAll('.calendar-day').forEach(el => {
+            if (el.dataset.date === removed.date) {
+                el.classList.remove('multi-selected');
+                // If it's still the active date, keep 'selected'
+                if (removed.date !== selectedDate) el.classList.remove('selected');
+            }
+        });
     }
+    renderTimeSlots();
     refreshQueuePanel();
     updateFormState();
 }
@@ -421,16 +428,23 @@ function selectTimeSlot(slot, element) {
         const existingIdx = scheduleQueue.findIndex(s => s.date === selectedDate && s.timeSlot === slot);
         if (existingIdx >= 0) {
             scheduleQueue.splice(existingIdx, 1);
-            // If no more slots for this date, remove it from selectedDates too
+            // If no more slots for this date, remove it from selectedDates
             const stillHasSlots = scheduleQueue.some(s => s.date === selectedDate);
             if (!stillHasSlots) {
                 selectedDates.delete(selectedDate);
-                renderCalendar();
+                // Update calendar highlight — revert to plain selected (active view)
+                document.querySelectorAll('.calendar-day').forEach(el => {
+                    if (el.dataset.date === selectedDate) {
+                        el.classList.remove('multi-selected');
+                        el.classList.add('selected');
+                    }
+                });
             }
         } else {
-            // Ensure the date is tracked as selected
+            // Add slot and mark date as having queued slots
             selectedDates.add(selectedDate);
             scheduleQueue.push({ date: selectedDate, timeSlot: slot });
+            // Visually: active date stays as 'selected'; other queued dates are 'multi-selected'
         }
         renderTimeSlots();
         refreshQueuePanel();
@@ -1252,12 +1266,14 @@ function renderMonthlyView() {
         dayEl.textContent = day;
 
         const dateStr = formatDateForStorage(new Date(currentYear, currentMonth, day));
+        dayEl.dataset.date = dateStr;
         const isToday = today.getDate() === day && today.getMonth() === currentMonth && today.getFullYear() === currentYear;
         const isPast  = new Date(currentYear, currentMonth, day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
         if (isToday) dayEl.classList.add('today');
         if (!multiScheduleMode && dateStr === selectedDate) dayEl.classList.add('selected');
         if (multiScheduleMode && selectedDates.has(dateStr)) dayEl.classList.add('multi-selected');
+        if (multiScheduleMode && dateStr === selectedDate) { dayEl.classList.remove('multi-selected'); dayEl.classList.add('selected'); }
         if (hasReservations(dateStr)) dayEl.classList.add('has-reservations');
 
         if (role === 'Admin') {
@@ -1380,19 +1396,27 @@ function renderDailyView() {
 
 function handleDateSelect(dateStr, dayEl) {
     if (multiScheduleMode) {
-        // Toggle date in/out of selectedDates set
-        if (selectedDates.has(dateStr)) {
-            selectedDates.delete(dateStr);
-            // Also remove any queued slots for this date
-            scheduleQueue = scheduleQueue.filter(s => s.date !== dateStr);
-            dayEl.classList.remove('multi-selected');
-        } else {
-            selectedDates.add(dateStr);
-            dayEl.classList.add('multi-selected');
-        }
-        // Always show the most recently clicked date's time slots
+        // Just switch the active date — time slots below update to show this date.
+        // Dates are highlighted (multi-selected) only when they have queued slots.
+        // Clicking a date does NOT remove its slots; only the X button does that.
         selectedDate     = dateStr;
         selectedTimeSlot = null;
+
+        // Update the "active" visual: un-highlight non-queued selected marker,
+        // highlight the newly clicked one temporarily so the user knows where they are.
+        document.querySelectorAll('.calendar-day').forEach(el => {
+            const d = el.dataset.date;
+            if (d && selectedDates.has(d)) {
+                el.classList.add('multi-selected');
+                el.classList.remove('selected');
+            } else {
+                el.classList.remove('multi-selected', 'selected');
+            }
+        });
+        // Mark active date distinctly (use selected class so it stands out)
+        dayEl.classList.add('selected');
+        dayEl.classList.remove('multi-selected');
+
         renderTimeSlots();
         renderQueuePanel();
         updateFormState();
