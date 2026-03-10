@@ -12,6 +12,7 @@
         <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
         <link rel="stylesheet" href="transitions.css">
+        <link rel="stylesheet" href="multi-schedule.css">
     </head>
     <body>
     <script src="transitions.js"></script>
@@ -47,6 +48,10 @@
             </div>
 
             <main class="main-content">
+
+                <!-- Mode Toggle Banner (Teacher only, injected by JS) -->
+                <div id="mode-banner"></div>
+
                 <!-- Shared Calendar for Both Views -->
                 <div class="calendar-container">
                     <div class="calendar-header">
@@ -95,6 +100,9 @@
                         <h3>Select Time Slot</h3>
                         <div class="time-slots-grid" id="time-slots"></div>
                     </div>
+
+                    <!-- Reservation Form -->
+                    <div id="schedule-queue-panel" style="display:none;"></div>
 
                     <!-- Reservation Form -->
                     <div class="reservation-form">

@@ -14,13 +14,13 @@ let calendarView    = 'monthly';
 let selectedDate    = null;
 let selectedTimeSlot = null;
 let currentLab      = '';
-let reservationsCache = []; // local cache updated by polling
+let reservationsCache = [];
 let pollingInterval = null;
-let adminSelectedDate = null; // tracks which date admin is viewing (null = all)
+let adminSelectedDate = null;
 
-// Multi-schedule mode state
+// Multi-schedule state
 let multiScheduleMode = false;
-let scheduleQueue     = []; // [{ lab, date, timeSlot }]
+let scheduleQueue     = []; // [{ date, timeSlot }]
 
 // Time slots available for reservation
 const TIME_SLOTS = [
@@ -202,412 +202,180 @@ function initializeUserView() {
     document.getElementById('user-calendar-controls').style.display  = 'flex';
     document.getElementById('admin-calendar-controls').style.display = 'none';
 
+    renderModeBanner();
     renderTimeSlots();
     renderMyReservations();
-    injectMultiScheduleToggle();
 
     document.getElementById('reservation-form')
         ?.addEventListener('submit', handleReservationSubmit);
 }
 
 // ============================================================================
-// MULTI-SCHEDULE TOGGLE & QUEUE
+// MODE BANNER
 // ============================================================================
 
-function injectMultiScheduleToggle() {
-    const form = document.getElementById('reservation-form');
-    if (!form || document.getElementById('multi-schedule-toggle-wrap')) return;
+function renderModeBanner() {
+    const banner = document.getElementById('mode-banner');
+    if (!banner) return;
 
-    // Insert toggle row above the form's first child
-    const toggleWrap = document.createElement('div');
-    toggleWrap.id = 'multi-schedule-toggle-wrap';
-    toggleWrap.style.cssText = `
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 20px; padding: 14px 18px;
-        background: var(--hover-bg); border-radius: 14px;
-        gap: 12px;
-    `;
-    toggleWrap.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-            <i class="fas fa-layer-group" style="color:var(--secondary-text); font-size:16px; flex-shrink:0;"></i>
-            <div style="min-width:0;">
-                <div style="font-size:14px; font-weight:600; color:var(--text-color);">Multi-Schedule Mode</div>
-                <div style="font-size:12px; color:var(--secondary-text); margin-top:1px;">Queue multiple slots and submit at once</div>
-            </div>
-        </div>
-        <button type="button" id="multi-schedule-btn" onclick="toggleMultiScheduleMode()"
-            style="
-                position:relative; width:48px; height:26px; border-radius:13px;
-                border:none; cursor:pointer; transition:background 0.3s;
-                background:#ccc; flex-shrink:0; padding:0;
-            ">
-            <span id="multi-schedule-knob" style="
-                position:absolute; top:3px; left:3px;
-                width:20px; height:20px; border-radius:50%;
-                background:white; transition:left 0.3s;
-                box-shadow:0 1px 4px rgba(0,0,0,0.2);
-            "></span>
-        </button>
-    `;
-    form.insertBefore(toggleWrap, form.firstChild);
-
-    // Queue panel (hidden until multi mode on)
-    const queuePanel = document.createElement('div');
-    queuePanel.id = 'schedule-queue-panel';
-    queuePanel.style.display = 'none';
-    queuePanel.innerHTML = `
-        <div style="
-            margin-bottom:20px; border:2px dashed var(--input-border);
-            border-radius:16px; padding:18px; transition:all 0.3s;
-        ">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-                <h4 style="margin:0; font-size:14px; font-weight:600; color:var(--text-color); display:flex; align-items:center; gap:8px;">
-                    <i class="fas fa-list-check"></i>
-                    Queued Slots <span id="queue-count-badge" style="
-                        background:#081316; color:white; border-radius:10px;
-                        padding:1px 8px; font-size:12px; font-weight:600;
-                    ">0</span>
-                </h4>
-                <button type="button" onclick="addToQueue()" id="add-to-queue-btn"
-                    style="
-                        background:#081316; color:white; border:none;
-                        border-radius:50px; padding:8px 16px; font-size:13px;
-                        font-weight:600; cursor:pointer; display:flex;
-                        align-items:center; gap:6px; transition:all 0.2s;
-                        white-space:nowrap;
-                    " disabled>
-                    <i class="fas fa-plus"></i> Add Slot
-                </button>
-            </div>
-            <div id="queue-list" style="display:flex; flex-direction:column; gap:8px; min-height:40px;">
-                <div id="queue-empty-hint" style="
-                    text-align:center; color:var(--secondary-text);
-                    font-size:13px; padding:10px 0;
-                ">
-                    <i class="fas fa-calendar-plus" style="margin-right:6px; opacity:0.4;"></i>
-                    Select a date &amp; time slot, then click Add Slot
+    banner.innerHTML = `
+        <div class="mode-banner ${multiScheduleMode ? 'multi-active' : ''}" id="mode-banner-card">
+            <div class="mode-banner-left">
+                <div class="mode-banner-icon">
+                    <i class="fas ${multiScheduleMode ? 'fa-layer-group' : 'fa-calendar-check'}"></i>
+                </div>
+                <div class="mode-banner-text">
+                    <div class="mode-banner-title">
+                        ${multiScheduleMode ? 'Multi-Schedule Mode' : 'Single Reservation Mode'}
+                        <span class="mode-banner-badge">${multiScheduleMode ? 'Multi' : 'Single'}</span>
+                    </div>
+                    <div class="mode-banner-desc">
+                        ${multiScheduleMode
+                            ? 'Pick as many dates &amp; time slots as you need, then submit them all at once.'
+                            : 'Select one date and time slot to make a single reservation.'}
+                    </div>
                 </div>
             </div>
+            <div class="mode-toggle-wrap">
+                <label class="mode-toggle-label-text" for="mode-toggle-input">Multi-Schedule</label>
+                <label class="mode-toggle-switch" title="Toggle Multi-Schedule Mode">
+                    <input type="checkbox" id="mode-toggle-input"
+                        ${multiScheduleMode ? 'checked' : ''}
+                        onchange="toggleMultiScheduleMode()">
+                    <span class="mode-toggle-track"></span>
+                </label>
+            </div>
         </div>
     `;
-    form.insertBefore(queuePanel, toggleWrap.nextSibling);
 }
 
 function toggleMultiScheduleMode() {
     multiScheduleMode = !multiScheduleMode;
 
-    // Update toggle button appearance
-    const btn   = document.getElementById('multi-schedule-btn');
-    const knob  = document.getElementById('multi-schedule-knob');
-    const panel = document.getElementById('schedule-queue-panel');
-    const submitBtn = document.getElementById('submit-reservation');
+    // Clear any current selection when switching modes
+    selectedDate     = null;
+    selectedTimeSlot = null;
+    scheduleQueue    = [];
 
-    if (btn)  btn.style.background  = multiScheduleMode ? '#081316' : '#ccc';
-    if (knob) knob.style.left       = multiScheduleMode ? '25px' : '3px';
-    if (panel) panel.style.display  = multiScheduleMode ? 'block' : 'none';
+    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+
+    renderModeBanner();
+    renderTimeSlots();
+    renderQueuePanel();
+    updateFormState();
+}
+
+// ============================================================================
+// QUEUE PANEL
+// ============================================================================
+
+function renderQueuePanel() {
+    const panel = document.getElementById('schedule-queue-panel');
+    if (!panel) return;
 
     if (!multiScheduleMode) {
-        // Clear queue when toggling off
-        scheduleQueue = [];
-        renderQueue();
-        // Restore normal submit button
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation';
-            submitBtn.onclick   = null;
-            submitBtn.disabled  = !selectedDate || !selectedTimeSlot;
-        }
-    } else {
-        // Switch submit button to batch submit
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit All (<span id="queue-submit-count">0</span>)';
-            submitBtn.disabled  = true;
-            submitBtn.onclick   = (e) => { e.preventDefault(); handleBatchSubmit(); };
-        }
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        return;
     }
 
-    updateAddToQueueBtn();
+    panel.style.display = 'block';
+    panel.innerHTML = `
+        <div class="queue-panel">
+            <div class="queue-panel-header">
+                <div class="queue-panel-title">
+                    <i class="fas fa-list-check"></i>
+                    Queued Slots
+                    <span class="queue-count-pill" id="queue-count-pill">${scheduleQueue.length}</span>
+                </div>
+                <button class="queue-add-btn" id="queue-add-btn"
+                    onclick="addToQueue()"
+                    ${(!selectedDate || !selectedTimeSlot) ? 'disabled' : ''}>
+                    <i class="fas fa-plus"></i> Add Slot
+                </button>
+            </div>
+            <div id="queue-list-container">
+                ${renderQueueItems()}
+            </div>
+        </div>
+    `;
+}
+
+function renderQueueItems() {
+    if (scheduleQueue.length === 0) {
+        return `
+            <div class="queue-hint">
+                <i class="fas fa-calendar-plus"></i>
+                <span>Select a date and time slot on the calendar above, then click <strong>Add Slot</strong></span>
+            </div>`;
+    }
+
+    return `<div class="queue-list">
+        ${scheduleQueue.map((s, i) => `
+            <div class="queue-item">
+                <div class="queue-item-num">${i + 1}</div>
+                <div class="queue-item-info">
+                    <div class="queue-item-date">${formatDate(s.date)}</div>
+                    <div class="queue-item-time"><i class="far fa-clock" style="margin-right:4px;"></i>${s.timeSlot}</div>
+                </div>
+                <button class="queue-remove-btn" onclick="removeFromQueue(${i})" title="Remove">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `).join('')}
+    </div>`;
+}
+
+function refreshQueuePanel() {
+    // Lightweight refresh — only update inner parts without full re-render
+    const pill      = document.getElementById('queue-count-pill');
+    const addBtn    = document.getElementById('queue-add-btn');
+    const container = document.getElementById('queue-list-container');
+
+    if (pill)      pill.textContent  = scheduleQueue.length;
+    if (addBtn)    addBtn.disabled   = !selectedDate || !selectedTimeSlot;
+    if (container) container.innerHTML = renderQueueItems();
 }
 
 function addToQueue() {
     if (!selectedDate || !selectedTimeSlot) return;
 
-    // Prevent duplicate slot in queue
-    const duplicate = scheduleQueue.some(s =>
-        s.lab === currentLab && s.date === selectedDate && s.timeSlot === selectedTimeSlot
-    );
-    if (duplicate) {
-        showQueueToast('This slot is already in the queue.', 'warn');
+    // Prevent duplicate
+    if (scheduleQueue.some(s => s.date === selectedDate && s.timeSlot === selectedTimeSlot)) {
+        showInlineToast('This slot is already in your queue.', 'warn');
         return;
     }
 
-    scheduleQueue.push({ lab: currentLab, date: selectedDate, timeSlot: selectedTimeSlot });
-    renderQueue();
+    scheduleQueue.push({ date: selectedDate, timeSlot: selectedTimeSlot });
 
-    // Reset date/time selection
+    // Clear selection so user picks next slot
     selectedDate     = null;
     selectedTimeSlot = null;
     document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
     renderTimeSlots();
     updateFormState();
-    updateAddToQueueBtn();
+    refreshQueuePanel();
 }
 
 function removeFromQueue(index) {
     scheduleQueue.splice(index, 1);
-    renderQueue();
-    updateAddToQueueBtn();
+    refreshQueuePanel();
+    updateFormState();
 }
 
-function renderQueue() {
-    const list  = document.getElementById('queue-list');
-    const badge = document.getElementById('queue-count-badge');
-    const countSpan = document.getElementById('queue-submit-count');
-    const submitBtn = document.getElementById('submit-reservation');
+function showInlineToast(msg, type = 'info') {
+    const existing = document.getElementById('inline-toast');
+    if (existing) existing.remove();
 
-    if (badge)     badge.textContent    = scheduleQueue.length;
-    if (countSpan) countSpan.textContent = scheduleQueue.length;
-    if (submitBtn) submitBtn.disabled   = scheduleQueue.length === 0;
-
-    if (!list) return;
-
-    if (scheduleQueue.length === 0) {
-        list.innerHTML = `
-            <div id="queue-empty-hint" style="
-                text-align:center; color:var(--secondary-text);
-                font-size:13px; padding:10px 0;
-            ">
-                <i class="fas fa-calendar-plus" style="margin-right:6px; opacity:0.4;"></i>
-                Select a date &amp; time slot, then click Add Slot
-            </div>`;
-        return;
-    }
-
-    list.innerHTML = scheduleQueue.map((s, i) => `
-        <div style="
-            display:flex; align-items:center; justify-content:space-between;
-            background:var(--card-bg); border-radius:10px; padding:10px 14px;
-            border:1px solid var(--border-color); gap:10px;
-        ">
-            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-                <span style="
-                    background:#081316; color:white; border-radius:50%;
-                    width:22px; height:22px; display:flex; align-items:center;
-                    justify-content:center; font-size:11px; font-weight:700;
-                    flex-shrink:0;
-                ">${i + 1}</span>
-                <div style="min-width:0;">
-                    <div style="font-size:13px; font-weight:600; color:var(--text-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                        ${formatDate(s.date)}
-                    </div>
-                    <div style="font-size:12px; color:var(--secondary-text); margin-top:1px;">
-                        <i class="far fa-clock" style="margin-right:4px;"></i>${s.timeSlot}
-                    </div>
-                </div>
-            </div>
-            <button type="button" onclick="removeFromQueue(${i})" style="
-                background:transparent; border:1px solid #ef4444; color:#ef4444;
-                border-radius:50%; width:26px; height:26px; cursor:pointer;
-                display:flex; align-items:center; justify-content:center;
-                font-size:11px; flex-shrink:0; transition:all 0.2s;
-            " title="Remove">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `).join('');
-}
-
-function updateAddToQueueBtn() {
-    const btn = document.getElementById('add-to-queue-btn');
-    if (btn) btn.disabled = !selectedDate || !selectedTimeSlot;
-}
-
-async function handleBatchSubmit() {
-    if (scheduleQueue.length === 0) return;
-
-    const teacherName = document.getElementById('teacher-name').value.trim();
-    const subject     = document.getElementById('subject').value;
-    const grade       = document.getElementById('grade').value;
-    const students    = document.getElementById('students').value;
-    const purpose     = document.getElementById('purpose').value.trim();
-
-    if (!teacherName || !subject || !grade || !students || !purpose) {
-        alert('Please fill in all reservation details before submitting.');
-        return;
-    }
-
-    const submitBtn = document.getElementById('submit-reservation');
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...'; }
-
-    try {
-        await fetchReservations();
-
-        // Client-side conflict check before sending
-        const conflicts = scheduleQueue.filter(s =>
-            isSlotReservedForLabDate(s.lab, s.date, s.timeSlot)
-        );
-        if (conflicts.length > 0) {
-            const msg = conflicts.map(s => `• ${formatDate(s.date)} — ${s.timeSlot}`).join('\n');
-            alert(`The following slots were already taken and were removed from your queue:\n\n${msg}\n\nPlease review and resubmit.`);
-            scheduleQueue = scheduleQueue.filter(s => !conflicts.includes(s));
-            renderQueue();
-            renderTimeSlots();
-            return;
-        }
-
-        const data = await apiCall('/api/reservations/batch', 'POST', {
-            slots: scheduleQueue,
-            teacherName, subject, grade, students, purpose
-        });
-
-        if (!data.success) { alert(data.message); return; }
-
-        showBatchResultModal(data.results);
-
-        // Reset
-        scheduleQueue = [];
-        renderQueue();
-        document.getElementById('reservation-form')?.reset();
-        selectedDate = null; selectedTimeSlot = null;
-        document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
-        renderTimeSlots();
-        updateFormState();
-        await fetchReservations();
-        renderCalendar();
-
-    } catch (err) {
-        alert('Error: ' + (err.message || 'Could not reach the server.'));
-        console.error(err);
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled  = scheduleQueue.length === 0;
-            submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> Submit All (<span id="queue-submit-count">${scheduleQueue.length}</span>)`;
-        }
-    }
-}
-
-function isSlotReservedForLabDate(lab, date, timeSlot) {
-    return reservationsCache.some(r =>
-        r.date === date &&
-        r.timeSlot === timeSlot &&
-        r.lab === lab &&
-        (r.status === 'approved' || r.status === 'pending')
-    );
-}
-
-function showBatchResultModal(results) {
-    document.getElementById('batch-result-modal')?.remove();
-    document.body.style.overflow = 'hidden';
-
-    const succeeded = results.filter(r => r.success);
-    const failed    = results.filter(r => !r.success);
-
-    const modal = document.createElement('div');
-    modal.id = 'batch-result-modal';
-    modal.style.cssText = `
-        position:fixed; top:0; left:0; width:100%; height:100%;
-        background:rgba(0,0,0,0.5); z-index:3000;
-        display:flex; align-items:center; justify-content:center;
-        padding:20px; box-sizing:border-box;
-    `;
-    modal.innerHTML = `
-        <div style="
-            background:var(--card-bg); border-radius:20px; width:100%;
-            max-width:520px; box-shadow:0 10px 40px rgba(0,0,0,0.3);
-            overflow:hidden; max-height:90vh; display:flex; flex-direction:column;
-        ">
-            <div style="
-                background:linear-gradient(135deg,#081316 0%,#2a3a3f 100%);
-                padding:20px 24px; display:flex; justify-content:space-between; align-items:center;
-            ">
-                <h3 style="color:white; margin:0; font-size:1rem; font-weight:600;">
-                    <i class="fas fa-paper-plane" style="margin-right:8px;"></i>Submission Summary
-                </h3>
-                <button onclick="closeBatchResultModal()" style="
-                    background:rgba(255,255,255,0.15); border:none; color:white;
-                    width:28px; height:28px; border-radius:50%; cursor:pointer;
-                    font-size:13px; display:flex; align-items:center; justify-content:center;">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div style="padding:22px 24px; overflow-y:auto; flex:1;">
-                <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-                    ${succeeded.length > 0 ? `
-                    <div style="flex:1; min-width:100px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3);
-                        border-radius:12px; padding:14px; text-align:center;">
-                        <div style="font-size:26px; font-weight:700; color:#22c55e;">${succeeded.length}</div>
-                        <div style="font-size:12px; color:#22c55e; font-weight:600;">Submitted</div>
-                    </div>` : ''}
-                    ${failed.length > 0 ? `
-                    <div style="flex:1; min-width:100px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);
-                        border-radius:12px; padding:14px; text-align:center;">
-                        <div style="font-size:26px; font-weight:700; color:#ef4444;">${failed.length}</div>
-                        <div style="font-size:12px; color:#ef4444; font-weight:600;">Failed</div>
-                    </div>` : ''}
-                </div>
-                ${succeeded.length > 0 ? `
-                <div style="margin-bottom:16px;">
-                    <div style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;
-                        color:var(--secondary-text); margin-bottom:8px;">
-                        <i class="fas fa-check-circle" style="color:#22c55e; margin-right:5px;"></i>Successfully Submitted
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        ${succeeded.map(r => `
-                        <div style="background:var(--hover-bg); border-radius:8px; padding:10px 14px;
-                            border-left:3px solid #22c55e; font-size:13px; color:var(--text-color);">
-                            <strong>${formatDate(r.date)}</strong>
-                            <span style="color:var(--secondary-text); margin-left:8px;">${r.timeSlot}</span>
-                        </div>`).join('')}
-                    </div>
-                </div>` : ''}
-                ${failed.length > 0 ? `
-                <div>
-                    <div style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;
-                        color:var(--secondary-text); margin-bottom:8px;">
-                        <i class="fas fa-times-circle" style="color:#ef4444; margin-right:5px;"></i>Could Not Submit
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        ${failed.map(r => `
-                        <div style="background:var(--hover-bg); border-radius:8px; padding:10px 14px;
-                            border-left:3px solid #ef4444; font-size:13px; color:var(--text-color);">
-                            <strong>${formatDate(r.date)}</strong>
-                            <span style="color:var(--secondary-text); margin-left:8px;">${r.timeSlot}</span>
-                            <div style="font-size:12px; color:#ef4444; margin-top:3px;">${r.message}</div>
-                        </div>`).join('')}
-                    </div>
-                </div>` : ''}
-                ${succeeded.length > 0 ? `
-                <p style="font-size:13px; color:var(--secondary-text); margin-top:16px; margin-bottom:0;">
-                    <i class="fas fa-info-circle" style="margin-right:5px;"></i>
-                    Submitted reservations are pending admin approval.
-                </p>` : ''}
-            </div>
-            <div style="padding:16px 24px; border-top:1px solid var(--border-color);">
-                <button onclick="closeBatchResultModal()" style="
-                    width:100%; padding:12px; border-radius:50px; cursor:pointer;
-                    background:#081316; color:white; border:none;
-                    font-size:14px; font-weight:600;">Done</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if (e.target === modal) closeBatchResultModal(); });
-}
-
-function closeBatchResultModal() {
-    document.getElementById('batch-result-modal')?.remove();
-    document.body.style.overflow = '';
-}
-
-function showQueueToast(msg, type = 'info') {
     const toast = document.createElement('div');
-    const color = type === 'warn' ? '#f59e0b' : '#081316';
+    toast.id = 'inline-toast';
+    const bg = type === 'warn' ? '#f59e0b' : '#081316';
     toast.style.cssText = `
-        position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-        background:${color}; color:white; padding:10px 20px; border-radius:50px;
+        position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+        background:${bg}; color:white; padding:11px 22px; border-radius:50px;
         font-size:13px; font-weight:500; z-index:9999;
         box-shadow:0 4px 16px rgba(0,0,0,0.2); white-space:nowrap;
-        animation:slideUp 0.2s ease;
+        animation:slideUp 0.2s ease; font-family:inherit;
     `;
     toast.textContent = msg;
     document.body.appendChild(toast);
@@ -652,11 +420,21 @@ function selectTimeSlot(slot, element) {
     element.classList.add('selected');
     selectedTimeSlot = slot;
     updateFormState();
-    updateAddToQueueBtn();
+
+    // In multi-mode, refresh the Add Slot button state in the queue panel
+    if (multiScheduleMode) {
+        const addBtn = document.getElementById('queue-add-btn');
+        if (addBtn) addBtn.disabled = false;
+    }
 }
 
 async function handleReservationSubmit(e) {
     e.preventDefault();
+
+    if (multiScheduleMode) {
+        await handleBatchSubmit();
+        return;
+    }
 
     if (!selectedDate || !selectedTimeSlot) {
         alert('Please select both date and time slot');
@@ -707,6 +485,124 @@ async function handleReservationSubmit(e) {
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation';
         }
     }
+}
+
+// ============================================================================
+// BATCH SUBMIT
+// ============================================================================
+
+async function handleBatchSubmit() {
+    if (scheduleQueue.length === 0) {
+        showInlineToast('Add at least one slot to the queue before submitting.', 'warn');
+        return;
+    }
+
+    const teacherName = document.getElementById('teacher-name').value.trim();
+    const subject     = document.getElementById('subject').value;
+    const grade       = document.getElementById('grade').value;
+    const students    = document.getElementById('students').value;
+    const purpose     = document.getElementById('purpose').value.trim();
+
+    if (!teacherName || !subject || !grade || !students || !purpose) {
+        alert('Please fill in all reservation details before submitting.');
+        return;
+    }
+
+    const submitBtn = document.getElementById('submit-reservation');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    }
+
+    try {
+        const data = await apiCall('/api/reservations/batch', 'POST', {
+            lab:         currentLab,
+            slots:       scheduleQueue.map(s => ({ date: s.date, timeSlot: s.timeSlot })),
+            teacherName, subject, grade, students, purpose
+        });
+
+        showBatchResultModal(data.results || []);
+
+        scheduleQueue    = [];
+        selectedDate     = null;
+        selectedTimeSlot = null;
+        document.getElementById('reservation-form')?.reset();
+        document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+        renderTimeSlots();
+        renderQueuePanel();
+        updateFormState();
+        await fetchReservations();
+        renderCalendar();
+
+    } catch (err) {
+        alert('Error: ' + (err.message || 'Could not reach the server.'));
+        console.error(err);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = scheduleQueue.length === 0;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservations';
+        }
+    }
+}
+
+function showBatchResultModal(results) {
+    const succeeded = results.filter(r => r.success);
+    const failed    = results.filter(r => !r.success);
+
+    const successRows = succeeded.map(r => `
+        <div class="batch-result-item success">
+            <div class="batch-result-item-date">${formatDate(r.date)}</div>
+            <div class="batch-result-item-time"><i class="far fa-clock" style="margin-right:4px;"></i>${r.timeSlot}</div>
+        </div>`).join('');
+
+    const failRows = failed.map(r => `
+        <div class="batch-result-item fail">
+            <div class="batch-result-item-date">${formatDate(r.date)}</div>
+            <div class="batch-result-item-time"><i class="far fa-clock" style="margin-right:4px;"></i>${r.timeSlot}</div>
+            <div class="batch-result-item-reason">${r.message || 'Conflict or error'}</div>
+        </div>`).join('');
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div class="batch-modal-overlay" id="batch-modal-overlay">
+            <div class="batch-modal">
+                <div class="batch-modal-header">
+                    <h3><i class="fas fa-layer-group" style="margin-right:8px;"></i>Batch Submission Results</h3>
+                    <button class="batch-modal-close" onclick="closeBatchResultModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="batch-modal-body">
+                    <div class="batch-summary-grid">
+                        <div class="batch-summary-stat success">
+                            <div class="batch-summary-num">${succeeded.length}</div>
+                            <div class="batch-summary-lbl">Submitted</div>
+                        </div>
+                        <div class="batch-summary-stat fail">
+                            <div class="batch-summary-num">${failed.length}</div>
+                            <div class="batch-summary-lbl">Failed</div>
+                        </div>
+                    </div>
+                    ${succeeded.length > 0 ? `
+                        <div class="batch-result-section-title">
+                            <i class="fas fa-check-circle" style="color:#22c55e;"></i> Submitted
+                        </div>
+                        <div class="batch-result-list">${successRows}</div>` : ''}
+                    ${failed.length > 0 ? `
+                        <div class="batch-result-section-title">
+                            <i class="fas fa-times-circle" style="color:#ef4444;"></i> Failed
+                        </div>
+                        <div class="batch-result-list">${failRows}</div>` : ''}
+                </div>
+                <div class="batch-modal-footer">
+                    <button class="batch-done-btn" onclick="closeBatchResultModal()">Done</button>
+                </div>
+            </div>
+        </div>
+    `);
+}
+
+function closeBatchResultModal() {
+    document.getElementById('batch-modal-overlay')?.remove();
 }
 
 function resetReservationForm() {
@@ -981,17 +877,39 @@ async function handleEditSubmit(e, reservationId) {
 
 function updateFormState() {
     const submitBtn = document.getElementById('submit-reservation');
-    if (submitBtn) submitBtn.disabled = !selectedDate || !selectedTimeSlot;
 
-    const selectedInfo = document.getElementById('selected-info');
-    if (selectedInfo) {
-        if (selectedDate && selectedTimeSlot) {
-            selectedInfo.innerHTML = `
-                <p><strong>Selected Date:</strong> ${formatDate(selectedDate)}</p>
-                <p><strong>Selected Time:</strong> ${selectedTimeSlot}</p>
-            `;
-        } else {
-            selectedInfo.innerHTML = '<p style="color:#707475;">Please select a date and time slot</p>';
+    if (multiScheduleMode) {
+        // In multi mode: submit button enabled when queue has items + a slot is selected
+        if (submitBtn) {
+            submitBtn.disabled = scheduleQueue.length === 0;
+            submitBtn.innerHTML = scheduleQueue.length > 0
+                ? `<i class="fas fa-paper-plane"></i> Submit ${scheduleQueue.length} Reservation${scheduleQueue.length > 1 ? "s" : ""}`
+                : "<i class='fas fa-paper-plane'></i> Submit Reservations";
+        }
+        const selectedInfo = document.getElementById('selected-info');
+        if (selectedInfo) {
+            if (selectedDate && selectedTimeSlot) {
+                selectedInfo.innerHTML = `
+                    <p><strong>Selected:</strong> ${formatDate(selectedDate)} — ${selectedTimeSlot}</p>
+                    <p style="color:var(--secondary-text);font-size:13px;">Click <strong>Add Slot</strong> in the queue to include this slot.</p>
+                `;
+            } else {
+                selectedInfo.innerHTML = "<p style='color:#707475;'>Pick a date and time slot, then add to queue</p>";
+            }
+        }
+    } else {
+        // Single mode: normal behaviour
+        if (submitBtn) submitBtn.disabled = !selectedDate || !selectedTimeSlot;
+        const selectedInfo = document.getElementById('selected-info');
+        if (selectedInfo) {
+            if (selectedDate && selectedTimeSlot) {
+                selectedInfo.innerHTML = `
+                    <p><strong>Selected Date:</strong> ${formatDate(selectedDate)}</p>
+                    <p><strong>Selected Time:</strong> ${selectedTimeSlot}</p>
+                `;
+            } else {
+                selectedInfo.innerHTML = "<p style='color:#707475;'>Please select a date and time slot</p>";
+            }
         }
     }
 }
@@ -1448,7 +1366,9 @@ function handleDateSelect(dateStr, dayEl) {
     selectedTimeSlot = null;
     renderTimeSlots();
     updateFormState();
-    updateAddToQueueBtn();
+
+    // In multi-mode, keep queue panel in sync
+    if (multiScheduleMode) renderQueuePanel();
 }
 
 function handleAdminDateClick(dateStr, dayEl) {
@@ -1604,7 +1524,3 @@ window.renderReservationsList = renderReservationsList;
 window.openEditModal          = openEditModal;
 window.closeEditModal         = closeEditModal;
 window.viewAllReservations    = viewAllReservations;
-window.toggleMultiScheduleMode = toggleMultiScheduleMode;
-window.addToQueue             = addToQueue;
-window.removeFromQueue        = removeFromQueue;
-window.closeBatchResultModal  = closeBatchResultModal;
