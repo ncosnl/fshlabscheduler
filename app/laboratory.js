@@ -203,32 +203,45 @@ function initializeUserView() {
     document.getElementById('user-calendar-controls').style.display  = 'flex';
     document.getElementById('admin-calendar-controls').style.display = 'none';
 
-    // Inject multi-select toggle next to the calendar title
-    const calendarTitleEl = document.getElementById('calendar-title');
-    if (calendarTitleEl && !document.getElementById('multi-select-toggle-wrap')) {
-        const wrap = document.createElement('label');
-        wrap.id = 'multi-select-toggle-wrap';
-        wrap.title = 'Multi-select: pick multiple dates and time slots';
-        wrap.style.cssText = `
-            display:inline-flex; align-items:center; gap:7px; cursor:pointer;
-            font-size:12px; font-weight:600; color:var(--secondary-text);
-            user-select:none; margin-left:12px; vertical-align:middle;
-        `;
-        wrap.innerHTML = `
-            <div id="ms-toggle-track" style="
-                width:36px; height:20px; border-radius:10px; background:var(--input-border);
-                position:relative; transition:background 0.2s; flex-shrink:0;">
-                <div id="ms-toggle-thumb" style="
-                    position:absolute; top:3px; left:3px; width:14px; height:14px;
-                    border-radius:50%; background:white; transition:left 0.2s;
-                    box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>
-            </div>
-            <span id="ms-toggle-label">Multi-select</span>
-        `;
-        wrap.addEventListener('click', toggleMultiSelectMode);
-        calendarTitleEl.parentNode && calendarTitleEl.parentNode.style
-            ? calendarTitleEl.insertAdjacentElement('afterend', wrap)
-            : calendarTitleEl.parentNode.appendChild(wrap);
+    // Inject multi-select mode banner between calendar title and calendar grid
+    if (!document.getElementById('multi-select-banner')) {
+        const calendarContainer = document.querySelector('.calendar-container');
+        if (calendarContainer) {
+            const banner = document.createElement('div');
+            banner.id = 'multi-select-banner';
+            banner.style.cssText = `
+                display:flex; align-items:center; justify-content:space-between;
+                padding:10px 16px; border-radius:12px; margin-bottom:12px;
+                background:var(--hover-bg); border:1.5px solid var(--input-border);
+                gap:12px; flex-wrap:wrap;
+            `;
+            banner.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:13px; font-weight:700; color:var(--text-color);">
+                        <i class="fas fa-calendar-plus" style="margin-right:6px; color:#6b7280;"></i>Multi-Schedule Mode
+                    </span>
+                    <span id="ms-banner-hint" style="font-size:11px; color:var(--secondary-text);">
+                        Enable to pick multiple dates &amp; time slots at once
+                    </span>
+                </div>
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; flex-shrink:0;">
+                    <span id="ms-mode-label" style="font-size:12px; font-weight:600; color:var(--secondary-text);">OFF</span>
+                    <div id="ms-toggle-track" style="
+                        width:48px; height:26px; border-radius:13px; background:var(--input-border);
+                        position:relative; transition:background 0.25s; cursor:pointer;">
+                        <div id="ms-toggle-thumb" style="
+                            position:absolute; top:3px; left:3px; width:20px; height:20px;
+                            border-radius:50%; background:white; transition:left 0.25s;
+                            box-shadow:0 2px 4px rgba(0,0,0,0.25);"></div>
+                    </div>
+                </label>
+            `;
+            banner.querySelector('#ms-toggle-track').addEventListener('click', toggleMultiSelectMode);
+            banner.querySelector('#ms-mode-label').addEventListener('click', toggleMultiSelectMode);
+            // Insert right before the calendar-header inside calendar-container
+            const calHeader = calendarContainer.querySelector('.calendar-header');
+            calendarContainer.insertBefore(banner, calHeader || calendarContainer.firstChild);
+        }
     }
 
     renderTimeSlots();
@@ -241,37 +254,40 @@ function initializeUserView() {
 function renderTimeSlots() {
     const container = document.getElementById('time-slots');
     if (!container) return;
-
     container.innerHTML = '';
-
-    // In multi-select mode, reserved status is checked against the FIRST selected date
-    // (slots show as reserved if taken on any of the selected dates)
-    const checkDate = multiSelectMode ? selectedDates[0] : selectedDate;
 
     TIME_SLOTS.forEach(slot => {
         const slotEl = document.createElement('div');
         slotEl.className = 'time-slot';
 
-        // In multi mode: slot is "taken" on at least one selected date
-        const isReserved = multiSelectMode
-            ? selectedDates.some(d => isSlotReserved(d, slot))
-            : (checkDate && isSlotReserved(checkDate, slot));
+        if (multiSelectMode) {
+            // Conflict = slot is taken on ANY of the selected dates
+            const conflictDates = selectedDates.filter(d => isSlotReserved(d, slot));
+            const isSelected    = selectedTimeSlots.includes(slot);
 
-        if (isReserved && !multiSelectMode) {
-            slotEl.classList.add('reserved');
-            slotEl.innerHTML = `${slot} <span style="font-size:11px;color:#ef4444;">(Reserved)</span>`;
-            slotEl.style.cursor  = 'not-allowed';
-            slotEl.style.opacity = '0.6';
-        } else {
-            if (multiSelectMode && selectedTimeSlots.includes(slot)) slotEl.classList.add('selected');
-            if (!multiSelectMode && slot === selectedTimeSlot) slotEl.classList.add('selected');
-            if (isReserved && multiSelectMode) {
-                // Show warning but still allow selection in multi mode (conflict warning shown on submit)
-                slotEl.innerHTML = `${slot} <span style="font-size:11px;color:#f59e0b;">⚠ conflict on some dates</span>`;
+            if (isSelected) slotEl.classList.add('selected');
+
+            if (conflictDates.length > 0 && !isSelected) {
+                // Warn but still allow — conflict modal handles it on submit
+                slotEl.innerHTML = `${slot} <span style="font-size:10px;color:#f59e0b;"> ⚠ conflict on ${conflictDates.length} date${conflictDates.length > 1 ? 's' : ''}</span>`;
             } else {
                 slotEl.textContent = slot;
             }
             slotEl.onclick = () => selectTimeSlot(slot, slotEl);
+
+        } else {
+            // Single-select: block reserved slots
+            const isReserved = selectedDate && isSlotReserved(selectedDate, slot);
+            if (isReserved) {
+                slotEl.classList.add('reserved');
+                slotEl.innerHTML = `${slot} <span style="font-size:11px;color:#ef4444;">(Reserved)</span>`;
+                slotEl.style.cursor  = 'not-allowed';
+                slotEl.style.opacity = '0.6';
+            } else {
+                if (slot === selectedTimeSlot) slotEl.classList.add('selected');
+                slotEl.textContent = slot;
+                slotEl.onclick = () => selectTimeSlot(slot, slotEl);
+            }
         }
 
         container.appendChild(slotEl);
@@ -280,8 +296,7 @@ function renderTimeSlots() {
 
 function selectTimeSlot(slot, element) {
     if (multiSelectMode) {
-        if (selectedDates.length === 0) { alert('Please select at least one date first.'); return; }
-        // Toggle slot in/out of selectedTimeSlots
+        if (selectedDates.length === 0) { alert('Please select at least one date on the calendar first.'); return; }
         const idx = selectedTimeSlots.indexOf(slot);
         if (idx === -1) {
             selectedTimeSlots.push(slot);
@@ -294,14 +309,12 @@ function selectTimeSlot(slot, element) {
         return;
     }
 
-    // Single-select mode (original behaviour)
+    // Single-select
     if (!selectedDate) { alert('Please select a date first'); return; }
-
     if (isSlotReserved(selectedDate, slot)) {
         alert('This time slot is already reserved. Please choose another time slot.');
         return;
     }
-
     document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
     selectedTimeSlot = slot;
@@ -311,7 +324,7 @@ function selectTimeSlot(slot, element) {
 async function handleReservationSubmit(e) {
     e.preventDefault();
 
-    // ── Multi-select mode ────────────────────────────────────────────────────
+    // ── Multi-select ────────────────────────────────────────────────────────
     if (multiSelectMode) {
         if (selectedDates.length === 0 || selectedTimeSlots.length === 0) {
             alert('Please select at least one date and one time slot.');
@@ -323,61 +336,57 @@ async function handleReservationSubmit(e) {
 
         await fetchReservations();
 
-        // Build full date × slot matrix
-        const allCombos    = [];
-        const conflicting  = [];
+        // Build date × slot combos
+        const okCombos = [], conflictLines = [];
         for (const d of selectedDates) {
             for (const slot of selectedTimeSlots) {
                 if (isSlotReserved(d, slot)) {
-                    conflicting.push(`${formatDate(d)} — ${slot}`);
+                    conflictLines.push(formatDate(d) + ' — ' + slot);
                 } else {
-                    allCombos.push({ date: d, timeSlot: slot });
+                    okCombos.push({ date: d, timeSlot: slot });
                 }
             }
         }
 
-        if (conflicting.length > 0) {
-            const available = allCombos.length;
-            const msg = conflicting.length === selectedDates.length * selectedTimeSlots.length
-                ? `All selected combinations are already taken:\n\n${conflicting.join('\n')}`
-                : `${conflicting.length} combination${conflicting.length > 1 ? 's are' : ' is'} already taken and will be skipped:\n\n${conflicting.join('\n')}\n\nProceed with the remaining ${available}?`;
-
-            if (conflicting.length === selectedDates.length * selectedTimeSlots.length) {
+        if (conflictLines.length > 0) {
+            const all = conflictLines.length === selectedDates.length * selectedTimeSlots.length;
+            const msg = all
+                ? 'All selected combinations are already taken:\n\n' + conflictLines.join('\n')
+                : conflictLines.length + ' combination' + (conflictLines.length > 1 ? 's are' : ' is') + ' already taken and will be skipped:\n\n' + conflictLines.join('\n') + '\n\nProceed with the remaining ' + okCombos.length + '?';
+            if (all) {
                 alert(msg);
                 if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation'; }
                 return;
             }
             if (!confirm(msg)) {
-                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> Submit ${available} Reservation${available !== 1 ? 's' : ''}`; }
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit ' + okCombos.length + ' Reservation' + (okCombos.length !== 1 ? 's' : ''); }
                 return;
             }
         }
 
-        if (allCombos.length === 0) {
+        if (okCombos.length === 0) {
             if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation'; }
             return;
         }
 
-        if (submitBtn) submitBtn.textContent = `Submitting ${allCombos.length}...`;
+        if (submitBtn) submitBtn.textContent = 'Submitting ' + okCombos.length + '...';
 
         try {
-            const commonFields = {
+            const data = await apiCall('/api/reservations', 'POST', {
                 lab:         currentLab,
+                dates:       okCombos.map(c => c.date),
+                timeSlots:   okCombos.map(c => c.timeSlot),
                 teacherName: document.getElementById('teacher-name').value,
                 subject:     document.getElementById('subject').value,
                 grade:       document.getElementById('grade').value,
                 students:    document.getElementById('students').value,
-                purpose:     document.getElementById('purpose').value,
-                dates:       allCombos.map(c => c.date),
-                timeSlots:   allCombos.map(c => c.timeSlot)
-            };
-
-            const data = await apiCall('/api/reservations', 'POST', commonFields);
+                purpose:     document.getElementById('purpose').value
+            });
 
             if (!data.success) { alert(data.message); return; }
 
-            const count = data.ids?.length || allCombos.length;
-            alert(`✅ ${count} reservation${count !== 1 ? 's' : ''} submitted!\n\nYour request${count !== 1 ? 's have' : ' has'} been sent to the administrator for approval.`);
+            const count = data.ids ? data.ids.length : okCombos.length;
+            alert('✅ ' + count + ' reservation' + (count !== 1 ? 's' : '') + ' submitted!\n\nYour request' + (count !== 1 ? 's have' : ' has') + ' been sent to the administrator for approval.');
             resetReservationForm();
             await fetchReservations();
             renderCalendar();
@@ -391,7 +400,7 @@ async function handleReservationSubmit(e) {
         return;
     }
 
-    // ── Single-select mode (original) ────────────────────────────────────────
+    // ── Single-select (original) ────────────────────────────────────────────
     if (!selectedDate || !selectedTimeSlot) {
         alert('Please select both date and time slot');
         return;
@@ -423,7 +432,7 @@ async function handleReservationSubmit(e) {
 
         if (!data.success) { alert(data.message); return; }
 
-        alert('✅ Reservation submitted successfully!\n\nYour request has been sent to the administrator for approval.');
+        alert('\u2705 Reservation submitted successfully!\n\nYour request has been sent to the administrator for approval.');
         resetReservationForm();
         await fetchReservations();
         renderCalendar();
@@ -451,7 +460,7 @@ function resetReservationForm() {
 }
 
 // ============================================================================
-// MULTI-SELECT MODE
+// MULTI-SELECT MODE TOGGLE
 // ============================================================================
 
 function toggleMultiSelectMode() {
@@ -461,51 +470,30 @@ function toggleMultiSelectMode() {
     selectedDate      = null;
     selectedTimeSlot  = null;
 
-    // Update toggle UI
+    // Update toggle track + thumb
     const track = document.getElementById('ms-toggle-track');
     const thumb = document.getElementById('ms-toggle-thumb');
-    const label = document.getElementById('ms-toggle-label');
+    const label = document.getElementById('ms-mode-label');
+    const hint  = document.getElementById('ms-banner-hint');
+    const banner = document.getElementById('multi-select-banner');
+
     if (track) track.style.background = multiSelectMode ? '#081316' : 'var(--input-border)';
-    if (thumb) thumb.style.left = multiSelectMode ? '19px' : '3px';
-    if (label) label.textContent = multiSelectMode ? 'Multi-select ON' : 'Multi-select';
+    if (thumb) thumb.style.left       = multiSelectMode ? '25px'    : '3px';
+    if (label) {
+        label.textContent  = multiSelectMode ? 'ON' : 'OFF';
+        label.style.color  = multiSelectMode ? '#081316' : 'var(--secondary-text)';
+        label.style.fontWeight = '700';
+    }
+    if (hint)   hint.textContent = multiSelectMode
+        ? 'Tap dates to add/remove — tap time slots to select multiple'
+        : 'Enable to pick multiple dates & time slots at once';
+    if (banner) banner.style.borderColor = multiSelectMode ? '#081316' : 'var(--input-border)';
 
-    // Update calendar title hint
+    // Update calendar title
     const calTitle = document.getElementById('calendar-title');
-    if (calTitle) calTitle.textContent = multiSelectMode ? 'Select Dates (tap to toggle)' : 'Select Date';
+    if (calTitle) calTitle.textContent = multiSelectMode ? 'Select Dates' : 'Select Date';
 
-    // Deselect everything visually
-    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
-    document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
-
-    renderTimeSlots();
-    updateFormState();
-}
-
-
-// ============================================================================
-// MULTI-SELECT MODE
-// ============================================================================
-
-function toggleMultiSelectMode() {
-    multiSelectMode   = !multiSelectMode;
-    selectedDates     = [];
-    selectedTimeSlots = [];
-    selectedDate      = null;
-    selectedTimeSlot  = null;
-
-    // Update toggle UI
-    const track = document.getElementById('ms-toggle-track');
-    const thumb = document.getElementById('ms-toggle-thumb');
-    const label = document.getElementById('ms-toggle-label');
-    if (track) track.style.background = multiSelectMode ? '#081316' : 'var(--input-border)';
-    if (thumb) thumb.style.left = multiSelectMode ? '19px' : '3px';
-    if (label) label.textContent = multiSelectMode ? 'Multi-select ON' : 'Multi-select';
-
-    // Update calendar title hint
-    const calTitle = document.getElementById('calendar-title');
-    if (calTitle) calTitle.textContent = multiSelectMode ? 'Select Dates (tap to toggle)' : 'Select Date';
-
-    // Clear visual selections
+    // Clear all visual selections
     document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
     document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
 
@@ -775,45 +763,39 @@ async function handleEditSubmit(e, reservationId) {
 }
 
 function updateFormState() {
-    const submitBtn  = document.getElementById('submit-reservation');
+    const submitBtn    = document.getElementById('submit-reservation');
     const selectedInfo = document.getElementById('selected-info');
 
     if (multiSelectMode) {
-        const dateCount = selectedDates.length;
-        const slotCount = selectedTimeSlots.length;
-        const total     = dateCount * slotCount;
-        const ready     = dateCount > 0 && slotCount > 0;
+        const dc    = selectedDates.length;
+        const sc    = selectedTimeSlots.length;
+        const total = dc * sc;
+        const ready = dc > 0 && sc > 0;
 
         if (submitBtn) {
             submitBtn.disabled = !ready;
             submitBtn.innerHTML = ready
-                ? `<i class="fas fa-paper-plane"></i> Submit ${total} Reservation${total !== 1 ? 's' : ''}`
-                : '<i class="fas fa-paper-plane"></i> Submit Reservation';
+                ? '<i class="fas fa-paper-plane"></i> Submit ' + total + ' Reservation' + (total !== 1 ? 's' : '')
+                : '<i class="fas fa-paper-plane"></i> Submit Reservations';
         }
-
         if (selectedInfo) {
-            if (ready) {
-                selectedInfo.innerHTML = `
-                    <p><strong>${dateCount} date${dateCount !== 1 ? 's' : ''}</strong> × <strong>${slotCount} time slot${slotCount !== 1 ? 's' : ''}</strong> = <strong>${total} reservation${total !== 1 ? 's' : ''}</strong></p>
-                `;
-            } else {
-                selectedInfo.innerHTML = '<p style="color:#707475;">Select dates and time slots above</p>';
-            }
+            selectedInfo.innerHTML = ready
+                ? '<p><strong>' + dc + ' date' + (dc !== 1 ? 's' : '') + '</strong> &times; <strong>' + sc + ' time slot' + (sc !== 1 ? 's' : '') + '</strong> = <strong>' + total + ' reservation' + (total !== 1 ? 's' : '') + '</strong></p>'
+                : '<p style="color:#707475;">Select dates on the calendar, then pick time slots</p>';
         }
         return;
     }
 
-    // Single-select mode
+    // Single mode
     if (submitBtn) {
         submitBtn.disabled = !selectedDate || !selectedTimeSlot;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Reservation';
     }
     if (selectedInfo) {
         if (selectedDate && selectedTimeSlot) {
-            selectedInfo.innerHTML = `
-                <p><strong>Selected Date:</strong> ${formatDate(selectedDate)}</p>
-                <p><strong>Selected Time:</strong> ${selectedTimeSlot}</p>
-            `;
+            selectedInfo.innerHTML =
+                '<p><strong>Selected Date:</strong> ' + formatDate(selectedDate) + '</p>' +
+                '<p><strong>Selected Time:</strong> ' + selectedTimeSlot + '</p>';
         } else {
             selectedInfo.innerHTML = '<p style="color:#707475;">Please select a date and time slot</p>';
         }
@@ -891,7 +873,91 @@ function renderReservationsList() {
         </div>
     `;
 
-    reservations.forEach(r => container.appendChild(createReservationItem(r)));
+    // Group batch reservations together; singles render individually
+    const rendered   = new Set();
+    const batchGroups = {};
+
+    reservations.forEach(r => {
+        if (r.batchId) {
+            if (!batchGroups[r.batchId]) batchGroups[r.batchId] = [];
+            batchGroups[r.batchId].push(r);
+        }
+    });
+
+    reservations.forEach(r => {
+        if (rendered.has(r.id)) return;
+        if (r.batchId && batchGroups[r.batchId].length > 1) {
+            // Only render the batch card once (when we hit the first member)
+            if (!rendered.has('batch-' + r.batchId)) {
+                rendered.add('batch-' + r.batchId);
+                batchGroups[r.batchId].forEach(br => rendered.add(br.id));
+                container.appendChild(createBatchReservationCard(batchGroups[r.batchId]));
+            }
+        } else {
+            rendered.add(r.id);
+            container.appendChild(createReservationItem(r));
+        }
+    });
+}
+
+function createBatchReservationCard(items) {
+    // Sort by date then time slot
+    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || a.timeSlot.localeCompare(b.timeSlot));
+    const first  = sorted[0];
+    const teacherName = first.teacherName || first.requester.split('@')[0];
+    const batchId     = first.batchId;
+
+    // Overall batch status: if any pending -> pending; else if all approved -> approved; else declined
+    const allStatuses = [...new Set(sorted.map(r => r.status))];
+    const batchStatus = allStatuses.includes('pending') ? 'pending'
+                      : allStatuses.every(s => s === 'approved') ? 'approved' : 'declined';
+
+    const statusColor = batchStatus === 'approved' ? '#22c55e' : batchStatus === 'declined' ? '#ef4444' : '#f59e0b';
+
+    const div = document.createElement('div');
+    div.className = 'reservation-item ' + batchStatus;
+    div.style.cssText = 'border-left: 4px solid ' + statusColor + '; border-radius: 14px; overflow: hidden; margin-bottom: 16px;';
+
+    // Slot rows
+    const slotRows = sorted.map(r => {
+        const sc = r.status === 'approved' ? '#22c55e' : r.status === 'declined' ? '#ef4444' : '#f59e0b';
+        return '<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--hover-bg); gap:10px; flex-wrap:wrap;">' +
+            '<span style="font-size:13px; color:var(--text-color);"><i class="far fa-calendar" style="margin-right:5px;"></i>' + formatDate(r.date) + '</span>' +
+            '<span style="font-size:13px; color:var(--secondary-text);"><i class="far fa-clock" style="margin-right:5px;"></i>' + r.timeSlot + '</span>' +
+            '<span style="padding:2px 10px; border-radius:20px; font-size:10px; font-weight:700; background:' + sc + '; color:white; text-transform:uppercase;">' + r.status + '</span>' +
+        '</div>';
+    }).join('');
+
+    const adminComment = first.adminComment
+        ? '<div style="margin-top:10px; padding:10px 14px; border-radius:8px; background:' + (batchStatus === 'declined' ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)') + '; border-left:3px solid ' + statusColor + '; font-size:13px; color:var(--text-color);"><i class="fas fa-comment-dots" style="margin-right:6px; opacity:0.6;"></i><strong>Admin note:</strong> ' + first.adminComment + '</div>'
+        : '';
+
+    div.innerHTML =
+        '<div class="reservation-header">' +
+            '<div class="reservation-info" style="width:100%;">' +
+                '<div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">' +
+                    '<h4 style="margin:0;">' + teacherName + '</h4>' +
+                    '<span style="padding:3px 12px; border-radius:20px; background:#081316; color:white; font-size:11px; font-weight:700; letter-spacing:0.5px;">' +
+                        '<i class="fas fa-layer-group" style="margin-right:4px;"></i>BATCH &middot; ' + sorted.length + ' slots' +
+                    '</span>' +
+                '</div>' +
+                '<p><i class="fas fa-book"></i> ' + first.subject + ' — Grade ' + first.grade + '</p>' +
+                '<p><i class="fas fa-users"></i> ' + first.students + ' students</p>' +
+                '<p><i class="fas fa-info-circle"></i> ' + first.purpose + '</p>' +
+                '<div style="margin-top:12px; border-top:1px solid var(--input-border); padding-top:10px;">' +
+                    slotRows +
+                '</div>' +
+                adminComment +
+            '</div>' +
+        '</div>' +
+        (batchStatus === 'pending' ?
+            '<div class="reservation-actions">' +
+                '<button class="approve-btn" onclick="openApproveModal(\'' + first.id + '\', \'' + batchId + '\')"><i class="fas fa-check"></i> Approve All</button>' +
+                '<button class="decline-btn" onclick="openDeclineModal(\'' + first.id + '\', \'' + batchId + '\')"><i class="fas fa-times"></i> Decline All</button>' +
+            '</div>'
+        : '');
+
+    return div;
 }
 
 function createReservationItem(reservation) {
@@ -939,7 +1005,7 @@ function createReservationItem(reservation) {
 
 // ── Comment Modal ─────────────────────────────────────────────────────────────
 
-function openCommentModal({ id, action }) {
+function openCommentModal({ id, batchId, action }) {
     document.getElementById('admin-comment-modal')?.remove();
     document.body.style.overflow = 'hidden';
 
@@ -993,7 +1059,7 @@ function openCommentModal({ id, action }) {
                         border:1px solid var(--secondary-text); font-size:14px; font-weight:500;">
                         Cancel
                     </button>
-                    <button id="admin-comment-submit" onclick="submitCommentModal('${id}','${action}')" style="
+                    <button id="admin-comment-submit" onclick="submitCommentModal('${id}','${action}','${batchId || ''}')" style="
                         flex:1; padding:11px; border-radius:50px; cursor:pointer;
                         background:${accentColor}; color:white; border:none;
                         font-size:14px; font-weight:600; display:flex;
@@ -1016,10 +1082,10 @@ function closeCommentModal() {
     document.body.style.overflow = '';
 }
 
-function openApproveModal(id) { openCommentModal({ id, action: 'approved' }); }
-function openDeclineModal(id)  { openCommentModal({ id, action: 'declined' }); }
+function openApproveModal(id, batchId) { openCommentModal({ id, batchId: batchId || null, action: 'approved' }); }
+function openDeclineModal(id, batchId)  { openCommentModal({ id, batchId: batchId || null, action: 'declined' }); }
 
-async function submitCommentModal(id, action) {
+async function submitCommentModal(id, action, batchId) {
     const comment   = document.getElementById('admin-comment-input')?.value.trim() || '';
     const submitBtn = document.getElementById('admin-comment-submit');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
@@ -1028,7 +1094,12 @@ async function submitCommentModal(id, action) {
         const body = { status: action };
         if (comment) body.adminComment = comment;
 
-        const data = await apiCall(`/api/reservations/${id}`, 'PATCH', body);
+        // Route to batch endpoint if this is a batch approval/decline
+        const endpoint = batchId
+            ? `/api/reservations/batch/${batchId}`
+            : `/api/reservations/${id}`;
+
+        const data = await apiCall(endpoint, 'PATCH', body);
         if (!data.success) { alert(data.message); return; }
 
         closeCommentModal();
@@ -1036,10 +1107,11 @@ async function submitCommentModal(id, action) {
         renderReservationsList();
         renderCalendar();
 
+        const count = data.count || 1;
         if (action === 'approved') {
-            alert('✅ Reservation approved! The teacher has been notified.');
+            alert('✅ ' + (count > 1 ? count + ' reservations' : 'Reservation') + ' approved! The teacher has been notified.');
         } else {
-            alert('❌ Reservation declined. The teacher has been notified.');
+            alert('❌ ' + (count > 1 ? count + ' reservations' : 'Reservation') + ' declined. The teacher has been notified.');
         }
     } catch (err) {
         alert('Error: ' + (err.message || 'Could not reach the server.'));
@@ -1145,7 +1217,7 @@ function renderMonthlyView() {
         const isPast  = new Date(currentYear, currentMonth, day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
         if (isToday) dayEl.classList.add('today');
-        if (dateStr === selectedDate) dayEl.classList.add('selected');
+        if (multiSelectMode ? selectedDates.includes(dateStr) : dateStr === selectedDate) dayEl.classList.add('selected');
         if (hasReservations(dateStr)) dayEl.classList.add('has-reservations');
 
         if (role === 'Admin') {
@@ -1205,7 +1277,7 @@ function renderWeeklyView() {
         const isPast  = d < new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
         if (isToday) dayEl.classList.add('today');
-        if (dateStr === selectedDate) dayEl.classList.add('selected');
+        if (multiSelectMode ? selectedDates.includes(dateStr) : dateStr === selectedDate) dayEl.classList.add('selected');
         if (hasReservations(dateStr)) dayEl.classList.add('has-reservations');
 
         if (role === 'Admin') {
@@ -1244,7 +1316,7 @@ function renderDailyView() {
     dayEl.className = 'calendar-day daily-view';
 
     if (currentDay.toDateString() === today.toDateString()) dayEl.classList.add('today');
-    if (dateStr === selectedDate) dayEl.classList.add('selected');
+    if (multiSelectMode ? selectedDates.includes(dateStr) : dateStr === selectedDate) dayEl.classList.add('selected');
     if (hasReservations(dateStr)) dayEl.classList.add('has-reservations');
 
     // Full date on top, large number below
@@ -1267,7 +1339,6 @@ function renderDailyView() {
 
 function handleDateSelect(dateStr, dayEl) {
     if (multiSelectMode) {
-        // Toggle date in/out of selectedDates
         const idx = selectedDates.indexOf(dateStr);
         if (idx === -1) {
             selectedDates.push(dateStr);
@@ -1276,13 +1347,12 @@ function handleDateSelect(dateStr, dayEl) {
             selectedDates.splice(idx, 1);
             dayEl.classList.remove('selected');
         }
-        // Re-render time slots so conflict warnings update
-        renderTimeSlots();
+        renderTimeSlots(); // refresh conflict warnings
         updateFormState();
         return;
     }
 
-    // Single-select mode (original behaviour)
+    // Single-select: clear all, select one, reset time slot
     document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
     dayEl.classList.add('selected');
     selectedDate     = dateStr;
@@ -1444,3 +1514,4 @@ window.renderReservationsList = renderReservationsList;
 window.openEditModal          = openEditModal;
 window.closeEditModal         = closeEditModal;
 window.viewAllReservations    = viewAllReservations;
+window.toggleMultiSelectMode  = toggleMultiSelectMode;
