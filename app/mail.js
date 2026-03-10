@@ -590,8 +590,9 @@ async function submitMailCommentModal(reservationId, action) {
 
         if (notif) {
             // Try to find the reservation to check for scheduleGroupId
+            let resData = null;
             try {
-                const resData = await mailApiCall(`/api/reservations?lab=${encodeURIComponent(notif.lab)}`);
+                resData = await mailApiCall(`/api/reservations?lab=${encodeURIComponent(notif.lab)}`);
                 if (resData.success) {
                     const res = resData.reservations.find(r => r.id === reservationId);
                     if (res?.scheduleGroupId) {
