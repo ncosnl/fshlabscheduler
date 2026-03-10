@@ -778,10 +778,27 @@ function updateFormState() {
                 ? '<i class="fas fa-paper-plane"></i> Submit ' + total + ' Reservation' + (total !== 1 ? 's' : '')
                 : '<i class="fas fa-paper-plane"></i> Submit Reservations';
         }
+
         if (selectedInfo) {
-            selectedInfo.innerHTML = ready
-                ? '<p><strong>' + dc + ' date' + (dc !== 1 ? 's' : '') + '</strong> &times; <strong>' + sc + ' time slot' + (sc !== 1 ? 's' : '') + '</strong> = <strong>' + total + ' reservation' + (total !== 1 ? 's' : '') + '</strong></p>'
-                : '<p style="color:#707475;">Select dates on the calendar, then pick time slots</p>';
+            if (!ready) {
+                selectedInfo.innerHTML = '<p style="color:#707475;">Select dates on the calendar, then pick time slots below</p>';
+            } else {
+                // Build a compact slot table so the teacher sees exactly what they're booking
+                const sortedDates = [...selectedDates].sort();
+                const dateRows = sortedDates.map(d =>
+                    '<div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:5px 0; border-bottom:1px solid var(--hover-bg);">' +
+                        '<span style="min-width:110px; font-size:12px; font-weight:600; color:var(--text-color);">' + formatDate(d) + '</span>' +
+                        selectedTimeSlots.map(s =>
+                            '<span style="font-size:11px; padding:2px 8px; border-radius:20px; background:var(--hover-bg); color:var(--secondary-text);">' + s + '</span>'
+                        ).join('') +
+                    '</div>'
+                ).join('');
+                selectedInfo.innerHTML =
+                    '<p style="font-size:12px; font-weight:600; color:var(--secondary-text); margin-bottom:8px;">' +
+                        total + ' reservation' + (total !== 1 ? 's' : '') + ' across ' + dc + ' date' + (dc !== 1 ? 's' : '') +
+                    '</p>' +
+                    '<div style="font-size:12px;">' + dateRows + '</div>';
+            }
         }
         return;
     }
