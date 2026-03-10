@@ -1111,12 +1111,29 @@ function createReservationItem(reservation) {
             <strong>Admin note:</strong> ${reservation.adminComment}
         </div>` : '';
 
+    // Build slot list for grouped reservations
+    let slotInfoHtml = `<p><i class="far fa-calendar"></i> ${formatDate(reservation.date)}</p>
+                <p><i class="far fa-clock"></i> ${reservation.timeSlot}</p>`;
+    let groupBadge = '';
+
+    if (reservation.scheduleGroupId) {
+        const siblings = reservationsCache
+            .filter(r => r.scheduleGroupId === reservation.scheduleGroupId)
+            .sort((a, b) => a.date.localeCompare(b.date));
+        if (siblings.length > 1) {
+            const slotList = siblings.map(s =>
+                `<li style="padding:3px 0;"><i class="far fa-calendar" style="margin-right:5px;opacity:0.6;"></i>${formatDate(s.date)} &nbsp;<i class="far fa-clock" style="margin-right:4px;opacity:0.6;"></i>${s.timeSlot}</li>`
+            ).join('');
+            slotInfoHtml = `<ul style="list-style:none;padding:0;margin:6px 0 4px;">${slotList}</ul>`;
+            groupBadge = `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(8,19,22,0.08);color:var(--text-color);font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-bottom:6px;"><i class="fas fa-layer-group"></i> MULTI-SCHEDULE · ${siblings.length} SLOTS</span><br>`;
+        }
+    }
+
     div.innerHTML = `
         <div class="reservation-header">
             <div class="reservation-info">
-                <h4>${teacherName}</h4>
-                <p><i class="far fa-calendar"></i> ${formatDate(reservation.date)}</p>
-                <p><i class="far fa-clock"></i> ${reservation.timeSlot}</p>
+                ${groupBadge}<h4>${teacherName}</h4>
+                ${slotInfoHtml}
                 <p><i class="fas fa-book"></i> ${reservation.subject} - Grade ${reservation.grade}</p>
                 <p><i class="fas fa-users"></i> ${reservation.students} students</p>
                 <p><i class="fas fa-info-circle"></i> ${reservation.purpose}</p>
@@ -1127,10 +1144,10 @@ function createReservationItem(reservation) {
         ${reservation.status === 'pending' ? `
             <div class="reservation-actions">
                 <button class="approve-btn" onclick="openApproveModal('${reservation.id}')">
-                    <i class="fas fa-check"></i> Approve
+                    <i class="fas fa-check"></i> Approve${reservation.scheduleGroupId ? ' All' : ''}
                 </button>
                 <button class="decline-btn" onclick="openDeclineModal('${reservation.id}')">
-                    <i class="fas fa-times"></i> Decline
+                    <i class="fas fa-times"></i> Decline${reservation.scheduleGroupId ? ' All' : ''}
                 </button>
             </div>
         ` : ''}
@@ -1230,7 +1247,14 @@ async function submitCommentModal(id, action) {
         const body = { status: action };
         if (comment) body.adminComment = comment;
 
-        const data = await apiCall(`/api/reservations/${id}`, 'PATCH', body);
+        // Check if this is a group reservation — route to group endpoint
+        const reservation = reservationsCache.find(r => r.id === id);
+        const isGroup = reservation?.scheduleGroupId;
+        const endpoint = isGroup
+            ? `/api/reservations/group/${reservation.scheduleGroupId}`
+            : `/api/reservations/${id}`;
+
+        const data = await apiCall(endpoint, 'PATCH', body);
         if (!data.success) { alert(data.message); return; }
 
         closeCommentModal();
@@ -1238,10 +1262,11 @@ async function submitCommentModal(id, action) {
         renderReservationsList();
         renderCalendar();
 
+        const label = isGroup ? 'Multi-schedule reservation' : 'Reservation';
         if (action === 'approved') {
-            alert('✅ Reservation approved! The teacher has been notified.');
+            alert(`✅ ${label} approved! The teacher has been notified.`);
         } else {
-            alert('❌ Reservation declined. The teacher has been notified.');
+            alert(`❌ ${label} declined. The teacher has been notified.`);
         }
     } catch (err) {
         alert('Error: ' + (err.message || 'Could not reach the server.'));

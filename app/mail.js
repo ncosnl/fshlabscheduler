@@ -94,6 +94,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 // LOAD MESSAGES
 // ============================================================================
 
+// Render notification messages — convert bullet lines (•) to styled HTML
+function formatNotifMessage(msg) {
+    if (!msg) return '';
+    const lines = msg.split('\n');
+    let html = '';
+    let inList = false;
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('•')) {
+            if (!inList) {
+                html += '<ul style="margin:8px 0 4px; padding-left:0; list-style:none;">';
+                inList = true;
+            }
+            html += `<li style="padding:4px 0; display:flex; align-items:center; gap:8px;">
+                <span style="width:6px;height:6px;border-radius:50%;background:currentColor;opacity:0.5;flex-shrink:0;display:inline-block;"></span>
+                <span>${trimmed.slice(1).trim()}</span>
+            </li>`;
+        } else {
+            if (inList) { html += '</ul>'; inList = false; }
+            if (trimmed) html += `<p style="margin:4px 0;">${trimmed}</p>`;
+        }
+    }
+    if (inList) html += '</ul>';
+    return html;
+}
+
 async function loadMessages() {
     try {
         const data = await mailApiCall('/api/notifications');
@@ -198,24 +224,6 @@ function createMessageElement(notification) {
 
     const fromName = notification.from.split('@')[0];
     const timeAgo  = getTimeAgo(notification.createdAt);
-    const isBatch  = isBatchNotification(notification);
-
-    // For batch notifications, show a clean slot-count preview instead of raw JSON
-    let previewHtml;
-    if (isBatch) {
-        const slots = parseBatchSlots(notification.message);
-        const previewText = `Multi-schedule: ${slots.length} reservation${slots.length !== 1 ? 's' : ''} for ${notification.lab}`;
-        previewHtml = `
-            <div class="message-preview">
-                ${notification.type === 'request' ? `<strong>From: ${fromName}</strong> — ` : ''}
-                <i class="fas fa-layer-group" style="margin-right:5px; opacity:0.7;"></i>${previewText}
-            </div>`;
-    } else {
-        previewHtml = `
-            <div class="message-preview">
-                ${notification.type === 'request' ? `<strong>From: ${fromName}</strong> — ` : ''}${notification.message}
-            </div>`;
-    }
 
     div.innerHTML = `
         <div class="message-header">
@@ -225,14 +233,13 @@ function createMessageElement(notification) {
             </div>
             <span class="message-time">${timeAgo}</span>
         </div>
-        ${previewHtml}
+        <div class="message-preview">
+            ${notification.type === 'request' ? `<strong>From: ${fromName}</strong> — ` : ''}${notification.message}
+        </div>
         <div class="message-meta">
             <div class="message-meta-item"><i class="fas fa-flask"></i><span>${notification.lab}</span></div>
-            ${isBatch
-                ? `<div class="message-meta-item"><i class="fas fa-layer-group"></i><span>${parseBatchSlots(notification.message).length} slots</span></div>`
-                : `<div class="message-meta-item"><i class="far fa-calendar"></i><span>${formatDate(notification.date)}</span></div>
-                   <div class="message-meta-item"><i class="far fa-clock"></i><span>${notification.timeSlot}</span></div>`
-            }
+            <div class="message-meta-item"><i class="far fa-calendar"></i><span>${formatDate(notification.date)}</span></div>
+            <div class="message-meta-item"><i class="far fa-clock"></i><span>${notification.timeSlot}</span></div>
         </div>
         ${!notification.read ? '<div class="unread-indicator"></div>' : ''}
     `;
@@ -259,79 +266,11 @@ async function openMessage(notificationId) {
     // Find the notification
     if (!notif) { alert('Notification not found.'); return; }
 
-    const role      = localStorage.getItem('fsh_user_role');
-    const detailEl  = document.getElementById('message-detail');
-    const isAdmin   = role === 'Admin';
-    const isPending = notif.status === 'pending' && notif.type === 'request';
-
-    // ── BATCH render path ─────────────────────────────────────────────────────
-    if (isBatchNotification(notif)) {
-        const slots     = parseBatchSlots(notif.message);
-        const fromName  = notif.from.split('@')[0];
-
-        const slotRows = slots.map((s, i) => `
-            <tr style="border-bottom:1px solid var(--border-color);">
-                <td style="padding:8px 10px; font-size:13px; color:var(--secondary-text);">${i + 1}</td>
-                <td style="padding:8px 10px; font-size:13px;">${formatDate(s.date)}</td>
-                <td style="padding:8px 10px; font-size:13px;">${s.timeSlot}</td>
-            </tr>`).join('');
-
-        const batchAdminActions = isAdmin && isPending ? `
-            <div class="message-actions">
-                <button class="action-btn approve" onclick="openMailApproveModal('${notif.batchId}', true)">
-                    <i class="fas fa-check"></i> Approve All
-                </button>
-                <button class="action-btn reject" onclick="openMailDeclineModal('${notif.batchId}', true)">
-                    <i class="fas fa-times"></i> Decline All
-                </button>
-            </div>
-        ` : '';
-
-        detailEl.innerHTML = `
-            <div class="detail-section">
-                <div class="detail-label">Subject</div>
-                <div class="detail-value" style="font-size:18px; font-weight:600;">${notif.subject}</div>
-            </div>
-            <div class="detail-section">
-                <div class="detail-label">From</div>
-                <div class="detail-value">${fromName}</div>
-            </div>
-            <div class="detail-section">
-                <div class="detail-label">Laboratory</div>
-                <div class="detail-value">${notif.lab}</div>
-            </div>
-            <div class="detail-section">
-                <div class="detail-label">
-                    <i class="fas fa-layer-group" style="margin-right:6px;"></i>
-                    Scheduled Slots (${slots.length})
-                </div>
-                <table style="width:100%; border-collapse:collapse; margin-top:10px; background:var(--hover-bg); border-radius:10px; overflow:hidden;">
-                    <thead>
-                        <tr style="background:rgba(8,19,22,0.07);">
-                            <th style="padding:8px 10px; font-size:11px; text-align:left; color:var(--secondary-text); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">#</th>
-                            <th style="padding:8px 10px; font-size:11px; text-align:left; color:var(--secondary-text); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Date</th>
-                            <th style="padding:8px 10px; font-size:11px; text-align:left; color:var(--secondary-text); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Time Slot</th>
-                        </tr>
-                    </thead>
-                    <tbody>${slotRows}</tbody>
-                </table>
-            </div>
-            <div class="detail-section">
-                <div class="detail-label">Status</div>
-                <div class="detail-item-value">
-                    <span class="message-badge ${notif.status}">${notif.status}</span>
-                </div>
-            </div>
-            ${batchAdminActions}
-        `;
-
-        document.getElementById('message-modal').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-        return;
-    }
-
-    // ── SINGLE render path (original behaviour) ───────────────────────────────
-    const fromName  = notif.from.split('@')[0];
+    const role         = localStorage.getItem('fsh_user_role');
+    const detailEl     = document.getElementById('message-detail');
+    const fromName     = notif.from.split('@')[0];
+    const isAdmin      = role === 'Admin';
+    const isPending    = notif.status === 'pending' && notif.type === 'request';
 
     // Fetch full reservation details if needed
     let reservationDetails = '';
@@ -339,8 +278,74 @@ async function openMessage(notificationId) {
         try {
             const resData = await mailApiCall(`/api/reservations?lab=${encodeURIComponent(notif.lab)}`);
             if (resData.success) {
+                // Check if this is a group notification (reservationId == groupId)
+                const groupSlots = resData.reservations
+                    .filter(r => r.scheduleGroupId === notif.reservationId)
+                    .sort((a, b) => a.date.localeCompare(b.date));
+
                 const res = resData.reservations.find(r => r.id === notif.reservationId);
-                if (res) {
+
+                if (groupSlots.length > 0) {
+                    // Multi-schedule group notification
+                    const slotRows = groupSlots.map(s => `
+                        <div style="display:flex; align-items:center; gap:10px; padding:8px 0;
+                            border-bottom:1px solid var(--border-color);">
+                            <i class="far fa-calendar" style="opacity:0.5; width:14px;"></i>
+                            <span style="font-weight:600; flex:1;">${formatDate(s.date)}</span>
+                            <i class="far fa-clock" style="opacity:0.5; width:14px;"></i>
+                            <span style="color:var(--secondary-text);">${s.timeSlot}</span>
+                        </div>`).join('');
+
+                    const sample = groupSlots[0];
+                    reservationDetails = `
+                        <div class="detail-section">
+                            <div class="detail-label" style="display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-layer-group"></i> Multi-Schedule Details
+                                <span style="font-size:11px;font-weight:700;background:var(--hover-bg);
+                                    padding:2px 8px;border-radius:20px;">${groupSlots.length} SLOTS</span>
+                            </div>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <div class="detail-item-label">Teacher</div>
+                                    <div class="detail-item-value">${sample.teacherName}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">Subject</div>
+                                    <div class="detail-item-value">${sample.subject}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">Grade Level</div>
+                                    <div class="detail-item-value">Grade ${sample.grade}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-item-label">Students</div>
+                                    <div class="detail-item-value">${sample.students}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-label">Scheduled Slots</div>
+                            <div style="border:1px solid var(--border-color);border-radius:10px;padding:4px 14px;">
+                                ${slotRows}
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-label">Purpose / Activity</div>
+                            <div class="detail-value">${sample.purpose}</div>
+                        </div>
+                        ${sample.adminComment ? `
+                        <div class="detail-section">
+                            <div class="detail-label">Admin Note</div>
+                            <div class="detail-value" style="
+                                background:${sample.status === 'declined' ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)'};
+                                border-left:3px solid ${sample.status === 'declined' ? '#ef4444' : '#22c55e'};
+                                border-radius:0 8px 8px 0; padding:10px 14px;">
+                                <i class="fas fa-comment-dots" style="margin-right:6px; opacity:0.6;"></i>${sample.adminComment}
+                            </div>
+                        </div>` : ''}
+                    `;
+                } else if (res) {
+                    // Single reservation
                     reservationDetails = `
                         <div class="detail-section">
                             <div class="detail-label">Reservation Details</div>
@@ -412,13 +417,16 @@ async function openMessage(notificationId) {
     ` : '';
 
     // Admin action buttons for pending requests — now opens comment modal
+    const isMultiGroup = notif.subject?.includes('Multi-Schedule');
+    const approveLabel = isMultiGroup ? 'Approve All' : 'Approve';
+    const declineLabel = isMultiGroup ? 'Decline All' : 'Decline';
     const adminActions = isAdmin && isPending ? `
         <div class="message-actions">
             <button class="action-btn approve" onclick="openMailApproveModal('${notif.reservationId}')">
-                <i class="fas fa-check"></i> Approve
+                <i class="fas fa-check"></i> ${approveLabel}
             </button>
             <button class="action-btn reject" onclick="openMailDeclineModal('${notif.reservationId}')">
-                <i class="fas fa-times"></i> Decline
+                <i class="fas fa-times"></i> ${declineLabel}
             </button>
         </div>
     ` : '';
@@ -439,7 +447,7 @@ async function openMessage(notificationId) {
         </div>
         <div class="detail-section">
             <div class="detail-label">Message</div>
-            <div class="detail-value">${notif.message}</div>
+            <div class="detail-value">${formatNotifMessage(notif.message)}</div>
         </div>
         <div class="detail-section">
             <div class="detail-grid">
@@ -488,7 +496,7 @@ window.onclick = function(event) {
 // ADMIN ACTIONS
 // ============================================================================
 
-function openMailCommentModal({ reservationId, action, isBatch = false }) {
+function openMailCommentModal({ reservationId, action }) {
     document.getElementById('mail-comment-modal')?.remove();
 
     const isApprove   = action === 'approved';
@@ -541,7 +549,7 @@ function openMailCommentModal({ reservationId, action, isBatch = false }) {
                         border:1px solid var(--secondary-text); font-size:14px; font-weight:500;">
                         Cancel
                     </button>
-                    <button id="mail-comment-submit" onclick="submitMailCommentModal('${reservationId}','${action}',${isBatch})" style="
+                    <button id="mail-comment-submit" onclick="submitMailCommentModal('${reservationId}','${action}')" style="
                         flex:1; padding:11px; border-radius:50px; cursor:pointer;
                         background:${accentColor}; color:white; border:none;
                         font-size:14px; font-weight:600; display:flex;
@@ -563,10 +571,10 @@ function closeMailCommentModal() {
     document.getElementById('mail-comment-modal')?.remove();
 }
 
-function openMailApproveModal(id, isBatch = false) { openMailCommentModal({ reservationId: id, action: 'approved', isBatch }); }
-function openMailDeclineModal(id, isBatch = false)  { openMailCommentModal({ reservationId: id, action: 'declined', isBatch }); }
+function openMailApproveModal(id) { openMailCommentModal({ reservationId: id, action: 'approved' }); }
+function openMailDeclineModal(id)  { openMailCommentModal({ reservationId: id, action: 'declined' }); }
 
-async function submitMailCommentModal(reservationId, action, isBatch = false) {
+async function submitMailCommentModal(reservationId, action) {
     const comment   = document.getElementById('mail-comment-input')?.value.trim() || '';
     const submitBtn = document.getElementById('mail-comment-submit');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
@@ -575,10 +583,33 @@ async function submitMailCommentModal(reservationId, action, isBatch = false) {
         const body = { status: action };
         if (comment) body.adminComment = comment;
 
-        // Route to batch endpoint when a batchId is supplied
-        const endpoint = isBatch
-            ? `/api/reservations/batch/${reservationId}`
-            : `/api/reservations/${reservationId}`;
+        // Check if this notification belongs to a multi-schedule group
+        const notif = allNotifications.find(n => n.id === currentMessageId);
+        let endpoint = `/api/reservations/${reservationId}`;
+        let isGroup  = false;
+
+        if (notif) {
+            // Try to find the reservation to check for scheduleGroupId
+            try {
+                const resData = await mailApiCall(`/api/reservations?lab=${encodeURIComponent(notif.lab)}`);
+                if (resData.success) {
+                    const res = resData.reservations.find(r => r.id === reservationId);
+                    if (res?.scheduleGroupId) {
+                        endpoint = `/api/reservations/group/${res.scheduleGroupId}`;
+                        isGroup  = true;
+                    }
+                }
+            } catch (_) {}
+
+            // If reservationId matches a groupId directly (notification stores groupId)
+            if (!isGroup) {
+                const groupMatch = resData?.reservations?.find(r => r.scheduleGroupId === reservationId);
+                if (groupMatch) {
+                    endpoint = `/api/reservations/group/${reservationId}`;
+                    isGroup  = true;
+                }
+            }
+        }
 
         const data = await mailApiCall(endpoint, 'PATCH', body);
         if (!data.success) { alert(data.message); return; }
@@ -587,10 +618,11 @@ async function submitMailCommentModal(reservationId, action, isBatch = false) {
         closeMessageModal();
         await loadMessages();
 
+        const label = isGroup ? 'Multi-schedule reservation' : 'Reservation';
         if (action === 'approved') {
-            alert('✅ Reservation approved! Teacher has been notified.');
+            alert(`✅ ${label} approved! Teacher has been notified.`);
         } else {
-            alert('❌ Reservation declined. Teacher has been notified.');
+            alert(`❌ ${label} declined. Teacher has been notified.`);
         }
     } catch (err) {
         alert('Could not reach the server. Please try again.');
@@ -616,37 +648,6 @@ function filterMessages(filter) {
 
     const filtered = filterNotifications(allNotifications, filter);
     renderMessages(applyMailSearch(filtered));
-}
-
-// ============================================================================
-// BATCH HELPERS
-// ============================================================================
-
-/**
- * Returns true if the notification represents a multi-slot batch reservation.
- * Batch notifications store a JSON slot list in the message field.
- */
-function isBatchNotification(notification) {
-    if (!notification || !notification.message) return false;
-    try {
-        const parsed = JSON.parse(notification.message);
-        return Array.isArray(parsed);
-    } catch {
-        return false;
-    }
-}
-
-/**
- * Parses the JSON slot list stored in a batch notification's message field.
- * Returns an array of { date, timeSlot } objects, or [] on failure.
- */
-function parseBatchSlots(message) {
-    try {
-        const parsed = JSON.parse(message);
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return [];
-    }
 }
 
 // ============================================================================
