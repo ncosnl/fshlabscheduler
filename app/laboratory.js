@@ -412,19 +412,23 @@ function renderTimeSlots() {
         const slotEl = document.createElement('div');
         slotEl.className = 'time-slot';
 
-        let isReserved, isQueued, isPartial;
+        let isReserved, isQueued, isPartial, conflictedDates, availableDates;
         if (multiScheduleMode) {
-            isReserved = selectedDates.size > 0 &&
-                [...selectedDates].every(d => isSlotReserved(d, slot));
-            const queuedCount = [...selectedDates].filter(d =>
+            const dates = [...selectedDates];
+            conflictedDates = dates.filter(d => isSlotReserved(d, slot));
+            availableDates  = dates.filter(d => !isSlotReserved(d, slot));
+            isReserved = dates.length > 0 && conflictedDates.length === dates.length;
+            const queuedCount = dates.filter(d =>
                 scheduleQueue.some(s => s.date === d && s.timeSlot === slot)
             ).length;
-            isQueued  = selectedDates.size > 0 && queuedCount === selectedDates.size;
-            isPartial = queuedCount > 0 && queuedCount < selectedDates.size;
+            isQueued  = dates.length > 0 && queuedCount === dates.length && !isReserved;
+            isPartial = queuedCount > 0 && queuedCount < dates.length;
         } else {
             isReserved = selectedDate && isSlotReserved(selectedDate, slot);
             isQueued   = false;
             isPartial  = false;
+            conflictedDates = [];
+            availableDates  = [];
         }
 
         if (isReserved) {
@@ -432,6 +436,28 @@ function renderTimeSlots() {
             slotEl.innerHTML = `${slot} <span style="font-size:11px;color:#ef4444;">(Reserved)</span>`;
             slotEl.style.cursor  = 'not-allowed';
             slotEl.style.opacity = '0.6';
+        } else if (multiScheduleMode && conflictedDates.length > 0 && availableDates.length > 0) {
+            // Partially conflicted — some selected dates are free, some are taken
+            slotEl.classList.add(isPartial ? 'queued partial' : '');
+            if (!isPartial) slotEl.classList.remove('queued', 'partial');
+            const conflictCount = conflictedDates.length;
+            const freeCount     = availableDates.length;
+            slotEl.style.borderColor = '#f59e0b';
+            slotEl.innerHTML = `
+                ${slot}
+                <span style="font-size:10px;margin-left:6px;color:#f59e0b;font-weight:600;">
+                    ${freeCount} free · ${conflictCount} taken
+                </span>`;
+            slotEl.title = `Taken on: ${conflictedDates.map(d => formatDate(d)).join(', ')}`;
+            if (isPartial) {
+                slotEl.classList.add('queued', 'partial');
+                slotEl.innerHTML = `
+                    ${slot}
+                    <span style="font-size:10px;margin-left:6px;font-weight:600;opacity:0.8;">
+                        <i class="fas fa-minus"></i> ${freeCount} free · ${conflictCount} taken
+                    </span>`;
+            }
+            slotEl.onclick = () => selectTimeSlot(slot, slotEl);
         } else if (isQueued) {
             slotEl.classList.add('queued');
             slotEl.innerHTML = `${slot} <i class="fas fa-check" style="font-size:11px;margin-left:5px;"></i>`;
@@ -598,24 +624,29 @@ async function handleBatchSubmit() {
         if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking conflicts...';
         await fetchReservations();
 
+        // Deduplicate queue (same date+slot added twice)
+        const seen = new Set();
+        scheduleQueue = scheduleQueue.filter(s => {
+            const key = `${s.date}|${s.timeSlot}`;
+            if (seen.has(key)) return false;
+            seen.add(key); return true;
+        });
+
         const freshConflicts = scheduleQueue.filter(s => isSlotReserved(s.date, s.timeSlot));
+        const cleanQueue     = scheduleQueue.filter(s => !isSlotReserved(s.date, s.timeSlot));
 
         if (freshConflicts.length > 0) {
-            scheduleQueue = scheduleQueue.filter(s => !isSlotReserved(s.date, s.timeSlot));
-            const conflictLines = freshConflicts.map(s => `• ${formatDate(s.date)} — ${s.timeSlot}`).join('\n');
-
-            if (scheduleQueue.length === 0) {
+            // Show a proper conflict review modal instead of a plain confirm()
+            const shouldProceed = await showConflictReviewModal(freshConflicts, cleanQueue);
+            if (!shouldProceed) {
+                scheduleQueue = cleanQueue;
                 renderTimeSlots();
                 renderQueuePanel();
                 updateFormState();
-                alert(`All queued slots were just reserved by someone else:\n\n${conflictLines}\n\nPlease select different slots.`);
                 return;
             }
-
-            const proceed = confirm(
-                `${freshConflicts.length} slot${freshConflicts.length > 1 ? 's were' : ' was'} just reserved by someone else and will be removed:\n\n${conflictLines}\n\nSubmit the remaining ${scheduleQueue.length} slot${scheduleQueue.length > 1 ? 's' : ''}?`
-            );
-            if (!proceed) {
+            scheduleQueue = cleanQueue;
+            if (scheduleQueue.length === 0) {
                 renderTimeSlots();
                 renderQueuePanel();
                 updateFormState();
@@ -656,33 +687,167 @@ async function handleBatchSubmit() {
     }
 }
 
+// ── Conflict Review Modal — shown before submit when fresh conflicts are found ──
+function showConflictReviewModal(conflicts, cleanQueue) {
+    return new Promise(resolve => {
+        document.getElementById('conflict-review-modal')?.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'conflict-review-modal';
+        overlay.style.cssText = `
+            position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:5000;
+            display:flex; align-items:center; justify-content:center;
+            padding:20px; box-sizing:border-box; animation:fadeIn 0.2s ease;
+        `;
+
+        const allConflicted = cleanQueue.length === 0;
+
+        overlay.innerHTML = `
+            <div style="background:var(--card-bg); border-radius:20px; width:100%; max-width:480px;
+                box-shadow:0 16px 48px rgba(0,0,0,0.3); overflow:hidden; animation:slideUp 0.25s ease;">
+                <div style="background:linear-gradient(135deg,#081316 0%,#2a3a3f 100%);
+                    padding:18px 24px; display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="color:white; margin:0; font-size:1rem; font-weight:600;">
+                        <i class="fas fa-exclamation-triangle" style="margin-right:8px; color:#f59e0b;"></i>
+                        Slot Conflicts Detected
+                    </h3>
+                    <button id="crm-close" style="background:rgba(255,255,255,0.15); border:none; color:white;
+                        width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:13px;
+                        display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div style="padding:20px 24px;">
+                    <p style="margin:0 0 14px; font-size:14px; color:var(--secondary-text); line-height:1.5;">
+                        ${allConflicted
+                            ? 'All queued slots have been reserved by someone else. Please choose different times.'
+                            : `${conflicts.length} slot${conflicts.length > 1 ? 's were' : ' was'} just reserved by someone else and will be removed from your queue.`
+                        }
+                    </p>
+
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px;
+                            color:var(--secondary-text); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-times-circle" style="color:#ef4444;"></i> Conflicted (${conflicts.length})
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                            ${conflicts.map(s => `
+                                <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);
+                                    border-radius:8px; padding:8px 12px; border-left:3px solid #ef4444;
+                                    display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:13px; font-weight:600; color:var(--text-color);">${formatDate(s.date)}</span>
+                                    <span style="font-size:12px; color:var(--secondary-text);">${s.timeSlot}</span>
+                                </div>`).join('')}
+                        </div>
+                    </div>
+
+                    ${!allConflicted ? `
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px;
+                            color:var(--secondary-text); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-check-circle" style="color:#22c55e;"></i> Will be submitted (${cleanQueue.length})
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:5px; max-height:150px; overflow-y:auto;">
+                            ${cleanQueue.map(s => `
+                                <div style="background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2);
+                                    border-radius:8px; padding:8px 12px; border-left:3px solid #22c55e;
+                                    display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:13px; font-weight:600; color:var(--text-color);">${formatDate(s.date)}</span>
+                                    <span style="font-size:12px; color:var(--secondary-text);">${s.timeSlot}</span>
+                                </div>`).join('')}
+                        </div>
+                    </div>` : ''}
+
+                    <div style="display:flex; gap:10px;">
+                        <button id="crm-cancel" style="flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                            background:transparent; color:var(--secondary-text);
+                            border:1px solid var(--secondary-text); font-size:14px; font-weight:500;">
+                            Cancel
+                        </button>
+                        ${!allConflicted ? `
+                        <button id="crm-proceed" style="flex:1; padding:11px; border-radius:50px; cursor:pointer;
+                            background:#081316; color:white; border:none; font-size:14px; font-weight:600;
+                            display:flex; align-items:center; justify-content:center; gap:8px;">
+                            <i class="fas fa-paper-plane"></i> Submit ${cleanQueue.length} Slot${cleanQueue.length !== 1 ? 's' : ''}
+                        </button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const close = (result) => {
+            overlay.remove();
+            resolve(result);
+        };
+
+        document.getElementById('crm-close').onclick  = () => close(false);
+        document.getElementById('crm-cancel').onclick = () => close(false);
+        document.getElementById('crm-proceed')?.addEventListener('click', () => close(true));
+        overlay.addEventListener('click', e => { if (e.target === overlay) close(false); });
+    });
+}
+
 function showBatchResultModal(results) {
     const succeeded = results.filter(r => r.success);
     const failed    = results.filter(r => !r.success);
+    const allGood   = failed.length === 0;
 
     const successRows = succeeded.map(r => `
         <div class="batch-result-item success">
-            <div class="batch-result-item-date">${formatDate(r.date)}</div>
-            <div class="batch-result-item-time"><i class="far fa-clock" style="margin-right:4px;"></i>${r.timeSlot}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div>
+                    <div class="batch-result-item-date">${formatDate(r.date)}</div>
+                    <div class="batch-result-item-time"><i class="far fa-clock" style="margin-right:4px;"></i>${r.timeSlot}</div>
+                </div>
+                <span style="font-size:11px; font-weight:600; color:#22c55e; background:rgba(34,197,94,0.1);
+                    padding:3px 10px; border-radius:20px; white-space:nowrap;">Submitted</span>
+            </div>
         </div>`).join('');
 
     const failRows = failed.map(r => `
         <div class="batch-result-item fail">
-            <div class="batch-result-item-date">${formatDate(r.date)}</div>
-            <div class="batch-result-item-time"><i class="far fa-clock" style="margin-right:4px;"></i>${r.timeSlot}</div>
-            <div class="batch-result-item-reason">${r.message || 'Conflict or error'}</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                <div>
+                    <div class="batch-result-item-date">${formatDate(r.date)}</div>
+                    <div class="batch-result-item-time"><i class="far fa-clock" style="margin-right:4px;"></i>${r.timeSlot}</div>
+                    <div class="batch-result-item-reason">
+                        <i class="fas fa-exclamation-circle" style="margin-right:4px;"></i>${r.message || 'Conflict or error'}
+                    </div>
+                </div>
+            </div>
         </div>`).join('');
+
+    const summaryMsg = allGood
+        ? `<div style="display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(34,197,94,0.08);
+               border:1px solid rgba(34,197,94,0.25); border-radius:12px; margin-bottom:16px; font-size:13px; font-weight:500; color:#22c55e;">
+               <i class="fas fa-check-circle" style="font-size:18px;"></i>
+               All ${succeeded.length} slot${succeeded.length !== 1 ? 's' : ''} submitted successfully! Awaiting admin approval.
+           </div>`
+        : succeeded.length === 0
+        ? `<div style="display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(239,68,68,0.08);
+               border:1px solid rgba(239,68,68,0.25); border-radius:12px; margin-bottom:16px; font-size:13px; font-weight:500; color:#ef4444;">
+               <i class="fas fa-times-circle" style="font-size:18px;"></i>
+               All slots conflicted — no reservations were created.
+           </div>`
+        : `<div style="display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(245,158,11,0.08);
+               border:1px solid rgba(245,158,11,0.25); border-radius:12px; margin-bottom:16px; font-size:13px; font-weight:500; color:#d97706;">
+               <i class="fas fa-exclamation-triangle" style="font-size:18px;"></i>
+               ${succeeded.length} of ${results.length} slots submitted. ${failed.length} had conflicts.
+           </div>`;
 
     document.body.insertAdjacentHTML('beforeend', `
         <div class="batch-modal-overlay" id="batch-modal-overlay">
             <div class="batch-modal">
                 <div class="batch-modal-header">
-                    <h3><i class="fas fa-layer-group" style="margin-right:8px;"></i>Batch Submission Results</h3>
+                    <h3><i class="fas fa-layer-group" style="margin-right:8px;"></i>Submission Results</h3>
                     <button class="batch-modal-close" onclick="closeBatchResultModal()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <div class="batch-modal-body">
+                    ${summaryMsg}
                     <div class="batch-summary-grid">
                         <div class="batch-summary-stat success">
                             <div class="batch-summary-num">${succeeded.length}</div>
@@ -690,7 +855,7 @@ function showBatchResultModal(results) {
                         </div>
                         <div class="batch-summary-stat fail">
                             <div class="batch-summary-num">${failed.length}</div>
-                            <div class="batch-summary-lbl">Failed</div>
+                            <div class="batch-summary-lbl">Conflicted</div>
                         </div>
                     </div>
                     ${succeeded.length > 0 ? `
@@ -700,7 +865,7 @@ function showBatchResultModal(results) {
                         <div class="batch-result-list">${successRows}</div>` : ''}
                     ${failed.length > 0 ? `
                         <div class="batch-result-section-title">
-                            <i class="fas fa-times-circle" style="color:#ef4444;"></i> Failed
+                            <i class="fas fa-times-circle" style="color:#ef4444;"></i> Conflicted
                         </div>
                         <div class="batch-result-list">${failRows}</div>` : ''}
                 </div>
