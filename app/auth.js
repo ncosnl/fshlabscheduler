@@ -12,6 +12,12 @@ function saveSession(token, user) {
     localStorage.setItem('fsh_token',      token);
     localStorage.setItem('fsh_user_email', user.email);
     localStorage.setItem('fsh_user_role',  user.role);
+    // Apply server-synced theme if present
+    if (user.theme) {
+        localStorage.setItem('fsh_theme', user.theme);
+        localStorage.setItem('fsh_theme_manual', '1');
+        document.documentElement.setAttribute('data-theme', user.theme);
+    }
 }
 
 function clearSession() {
@@ -387,6 +393,12 @@ async function requireSession() {
         // Keep localStorage display info in sync
         localStorage.setItem('fsh_user_email', data.user.email);
         localStorage.setItem('fsh_user_role',  data.user.role);
+        // Apply server-synced theme on every session restore
+        if (data.user.theme) {
+            localStorage.setItem('fsh_theme', data.user.theme);
+            localStorage.setItem('fsh_theme_manual', '1');
+            document.documentElement.setAttribute('data-theme', data.user.theme);
+        }
         return data.user;
 
     } catch {

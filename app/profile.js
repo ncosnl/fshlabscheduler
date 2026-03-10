@@ -31,6 +31,12 @@ async function requireSession() {
         if (!data.success) { clearSession(); fshNavigate('index.html'); return null; }
         localStorage.setItem('fsh_user_email', data.user.email);
         localStorage.setItem('fsh_user_role',  data.user.role);
+        // Apply server-synced theme on every session restore
+        if (data.user.theme) {
+            localStorage.setItem('fsh_theme', data.user.theme);
+            localStorage.setItem('fsh_theme_manual', '1');
+            document.documentElement.setAttribute('data-theme', data.user.theme);
+        }
         return data.user;
     } catch {
         const email = localStorage.getItem('fsh_user_email');

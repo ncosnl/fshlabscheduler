@@ -125,63 +125,38 @@ function initializeSidebar() {
 // DARK MODE FUNCTIONALITY
 // ============================================================================
 
-const THEME_API_BASE = 'https://fsh-scheduler.medranowilljairuz.workers.dev';
-
-// Apply theme to DOM and sync all toggle slider icons
-function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.querySelectorAll('.theme-toggle-slider i').forEach(icon => {
-        icon.className = `fas ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`;
-    });
-}
-
-// Fetch the user's saved theme from the server and apply it
-async function loadThemeFromServer() {
-    const token = localStorage.getItem('fsh_token');
-    if (!token) return;
-    try {
-        const res  = await fetch(`${THEME_API_BASE}/api/preferences`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        if (data.success && data.theme) {
-            localStorage.setItem('fsh_theme', data.theme);
-            localStorage.setItem('fsh_theme_manual', '1');
-            applyTheme(data.theme);
-        }
-    } catch { /* offline — keep local value */ }
-}
-
-// Save the user's theme to the server (fire-and-forget)
-async function saveThemeToServer(theme) {
-    const token = localStorage.getItem('fsh_token');
-    if (!token) return;
-    try {
-        await fetch(`${THEME_API_BASE}/api/preferences`, {
-            method:  'PATCH',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ theme })
-        });
-    } catch { /* silent */ }
-}
-
 function initializeDarkMode() {
-    // Apply immediately from localStorage so there's no flash on load
-    const savedTheme  = localStorage.getItem('fsh_theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.setAttribute('data-theme', savedTheme || (prefersDark ? 'dark' : 'light'));
+    // One-time migration: clear any auto-saved theme that was never manually
+    // chosen, so the device theme takes over for existing users too.
+    const savedTheme = localStorage.getItem('fsh_theme');
+    const userManuallyToggled = localStorage.getItem('fsh_theme_manual');
+    if (savedTheme && !userManuallyToggled) {
+        localStorage.removeItem('fsh_theme');
+    }
 
-    // Follow device preference only if the user has never manually toggled
+    // If the user has never manually set a theme, follow the device
+    if (!localStorage.getItem('fsh_theme')) {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else {
+        // User has a saved preference — respect it
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('fsh_theme'));
+    }
+    
+    // Listen for device theme changes while the app is open
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (!localStorage.getItem('fsh_theme_manual')) {
-            applyTheme(e.matches ? 'dark' : 'light');
+        // Only auto-switch if the user hasn't manually set a preference
+        if (!localStorage.getItem('fsh_theme')) {
+            document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            // Update the toggle slider icon too
+            const sliders = document.querySelectorAll('.theme-toggle-slider i');
+            sliders.forEach(icon => {
+                icon.className = `fas ${e.matches ? 'fa-moon' : 'fa-sun'}`;
+            });
         }
     });
-
+    
     createThemeToggle();
-
-    // Override with server-saved preference (runs async after page paint)
-    loadThemeFromServer();
 }
 
 function createThemeToggle() {
@@ -233,11 +208,29 @@ function createThemeToggle() {
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('fsh_theme', newTheme);
-    localStorage.setItem('fsh_theme_manual', '1');
-    applyTheme(newTheme);
-    saveThemeToServer(newTheme); // sync across devices
+    localStorage.setItem('fsh_theme_manual', '1'); // Mark as manually chosen
+    
+    // Update all toggle sliders
+    const sliders = document.querySelectorAll('.theme-toggle-slider i');
+    sliders.forEach(icon => {
+        icon.className = `fas ${newTheme === 'dark' ? 'fa-moon' : 'fa-sun'}`;
+    });
+
+    // Sync theme to server so it persists across devices
+    const token = localStorage.getItem('fsh_token');
+    if (token) {
+        fetch('https://fsh-scheduler.medranowilljairuz.workers.dev/api/user/preferences', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ theme: newTheme })
+        }).catch(() => {}); // silent fail — local change already applied
+    }
 }
 
 // Make function globally available
