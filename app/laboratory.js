@@ -383,6 +383,48 @@ function showInlineToast(msg, type = 'info') {
     setTimeout(() => toast.remove(), 3000);
 }
 
+// Per-date slot conflict toast — shows exactly which dates are already reserved for a given time slot
+function showSlotConflictToast(slot, conflictedDates, addedCount, type = 'warn') {
+    document.getElementById('conflict-toast')?.remove();
+
+    const isAllTaken = addedCount === 0;
+    const bg         = type === 'error' ? '#dc2626' : '#d97706';
+    const icon       = type === 'error' ? 'fa-times-circle' : 'fa-exclamation-triangle';
+
+    const dateRows = conflictedDates
+        .map(d => `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.1);last-child:border:none;">
+            <i class="fas fa-calendar-times" style="font-size:10px;opacity:0.8;flex-shrink:0;"></i>
+            <span style="font-weight:600;">${formatDate(d)}</span>
+            <span style="opacity:0.75;font-size:11px;margin-left:auto;">already reserved</span>
+        </div>`)
+        .join('');
+
+    const summary = isAllTaken
+        ? `<strong>${slot}</strong> is taken on all selected dates:`
+        : `<strong>${slot}</strong> is already reserved on ${conflictedDates.length} date${conflictedDates.length > 1 ? 's' : ''} — added to the other ${addedCount}:`;
+
+    const toast = document.createElement('div');
+    toast.id = 'conflict-toast';
+    toast.style.cssText = `
+        position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+        background:${bg}; color:white; padding:14px 18px; border-radius:14px;
+        font-size:13px; font-weight:500; z-index:9999; max-width:400px; width:90%;
+        box-shadow:0 4px 24px rgba(0,0,0,0.3); line-height:1.5;
+        font-family:inherit; animation:fadeInUp 0.2s ease;
+    `;
+    toast.innerHTML = `
+        <div style="margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;">
+            <i class="fas ${icon}" style="margin-top:2px;flex-shrink:0;"></i>
+            <span>${summary}</span>
+        </div>
+        <div style="background:rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;">
+            ${dateRows}
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 6000);
+}
+
 // Conflict toast — wider, stays longer, supports multi-line
 function showConflictToast(msg, type = 'warn') {
     const existing = document.getElementById('conflict-toast');
@@ -431,43 +473,54 @@ function renderTimeSlots() {
             availableDates  = [];
         }
 
-        if (isReserved) {
-            slotEl.classList.add('reserved');
-            slotEl.innerHTML = `${slot} <span style="font-size:11px;color:#ef4444;">(Reserved)</span>`;
-            slotEl.style.cursor  = 'not-allowed';
-            slotEl.style.opacity = '0.6';
-        } else if (multiScheduleMode && conflictedDates.length > 0 && availableDates.length > 0) {
-            // Partially conflicted — some selected dates are free, some are taken
-            slotEl.classList.add(isPartial ? 'queued partial' : '');
-            if (!isPartial) slotEl.classList.remove('queued', 'partial');
+        // Slots are NEVER fully disabled — always show and allow click with a warning label if conflicted
+        if (multiScheduleMode) {
             const conflictCount = conflictedDates.length;
             const freeCount     = availableDates.length;
-            slotEl.style.borderColor = '#f59e0b';
-            slotEl.innerHTML = `
-                ${slot}
-                <span style="font-size:10px;margin-left:6px;color:#f59e0b;font-weight:600;">
-                    ${freeCount} free · ${conflictCount} taken
-                </span>`;
-            slotEl.title = `Taken on: ${conflictedDates.map(d => formatDate(d)).join(', ')}`;
-            if (isPartial) {
+            if (isQueued) {
+                slotEl.classList.add('queued');
+                slotEl.innerHTML = `${slot} <i class="fas fa-check" style="font-size:11px;margin-left:5px;"></i>`;
+            } else if (isPartial) {
                 slotEl.classList.add('queued', 'partial');
+                const label = conflictCount > 0
+                    ? `<i class="fas fa-minus"></i> ${freeCount} free · ${conflictCount} taken`
+                    : `<i class="fas fa-minus"></i>`;
+                slotEl.innerHTML = `${slot} <span style="font-size:10px;margin-left:6px;font-weight:600;opacity:0.8;">${label}</span>`;
+            } else if (conflictCount > 0 && freeCount > 0) {
+                // Mixed — some dates free, some taken
+                slotEl.style.borderColor = '#f59e0b';
                 slotEl.innerHTML = `
                     ${slot}
-                    <span style="font-size:10px;margin-left:6px;font-weight:600;opacity:0.8;">
-                        <i class="fas fa-minus"></i> ${freeCount} free · ${conflictCount} taken
+                    <span style="font-size:10px;margin-left:6px;color:#f59e0b;font-weight:600;">
+                        ${freeCount} free · ${conflictCount} taken
                     </span>`;
+                slotEl.title = `Already reserved on: ${conflictedDates.map(d => formatDate(d)).join(', ')}`;
+            } else if (isReserved) {
+                // All selected dates taken — still clickable, just warn
+                slotEl.style.borderColor = '#ef4444';
+                slotEl.innerHTML = `
+                    ${slot}
+                    <span style="font-size:11px;margin-left:6px;color:#ef4444;font-weight:600;">
+                        <i class="fas fa-exclamation-circle"></i> All dates taken
+                    </span>`;
+                slotEl.title = `Already reserved on all selected dates`;
+            } else {
+                slotEl.textContent = slot;
             }
             slotEl.onclick = () => selectTimeSlot(slot, slotEl);
-        } else if (isQueued) {
-            slotEl.classList.add('queued');
-            slotEl.innerHTML = `${slot} <i class="fas fa-check" style="font-size:11px;margin-left:5px;"></i>`;
-            slotEl.onclick = () => selectTimeSlot(slot, slotEl);
-        } else if (isPartial) {
-            slotEl.classList.add('queued', 'partial');
-            slotEl.innerHTML = `${slot} <i class="fas fa-minus" style="font-size:11px;margin-left:5px;"></i>`;
-            slotEl.onclick = () => selectTimeSlot(slot, slotEl);
         } else {
-            slotEl.textContent = slot;
+            // Single mode — show reserved warning but keep slot visible and clickable
+            if (isReserved) {
+                slotEl.style.borderColor = '#ef4444';
+                slotEl.innerHTML = `
+                    ${slot}
+                    <span style="font-size:11px;margin-left:6px;color:#ef4444;font-weight:600;">
+                        <i class="fas fa-exclamation-circle"></i> Already reserved
+                    </span>`;
+                slotEl.title = 'This slot is already reserved on the selected date';
+            } else {
+                slotEl.textContent = slot;
+            }
             slotEl.onclick = () => selectTimeSlot(slot, slotEl);
         }
 
@@ -503,15 +556,11 @@ function selectTimeSlot(slot, element) {
                 scheduleQueue.push({ date, timeSlot: slot });
             }
 
-            // Notify about skipped conflicted dates
+            // Warn about conflicted dates with a per-date breakdown
             if (conflicted.length > 0) {
-                const dateLabels = conflicted.map(d => formatDate(d)).join(', ');
                 const added = selectedDates.size - conflicted.length - alreadyIn.length;
-                if (added === 0 && alreadyIn.length === 0) {
-                    showConflictToast(`${slot} is already reserved on all selected dates: ${dateLabels}`, 'error');
-                } else {
-                    showConflictToast(`Skipped ${conflicted.length} date${conflicted.length > 1 ? 's' : ''} — already reserved: ${dateLabels}`, 'warn');
-                }
+                const type  = added === 0 && alreadyIn.length === 0 ? 'error' : 'warn';
+                showSlotConflictToast(slot, conflicted, added, type);
             }
         }
 
@@ -521,11 +570,10 @@ function selectTimeSlot(slot, element) {
         return;
     }
 
-    // Single mode — normal behaviour
+    // Single mode — warn but don't block; teacher can still select the slot
     if (!selectedDate) { alert('Please select a date first'); return; }
     if (isSlotReserved(selectedDate, slot)) {
-        alert('This time slot is already reserved. Please choose another time slot.');
-        return;
+        showConflictToast(`${slot} is already reserved on ${formatDate(selectedDate)}. It will be flagged during submission.`, 'warn');
     }
     document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
