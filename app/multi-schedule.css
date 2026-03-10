@@ -184,23 +184,10 @@
     border-radius: 50%;
     background: var(--secondary-text);
     transition:
-        left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
-        width 0.18s ease,
-        background 0.35s ease,
-        box-shadow 0.35s ease;
+        left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 1px 6px rgba(0,0,0,0.25);
-    will-change: left, width;
-}
-
-/* Squish the thumb while dragging (active state) */
-.mode-toggle-switch:active .mode-toggle-track::after {
-    width: 22px;
-}
-
-/* Squish toward the right when active+checked */
-.mode-toggle-switch:active input:checked + .mode-toggle-track::after {
-    left: 23px;
-    width: 22px;
 }
 
 .mode-toggle-switch input:checked + .mode-toggle-track::after {
