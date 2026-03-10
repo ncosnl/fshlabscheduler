@@ -21,6 +21,7 @@ let adminSelectedDate = null;
 // Multi-schedule state
 let multiScheduleMode = false;
 let scheduleQueue     = []; // [{ date, timeSlot }]
+let selectedDates     = new Set(); // active dates in multi mode
 
 // Time slots available for reservation
 const TIME_SLOTS = [
@@ -256,8 +257,9 @@ function toggleMultiScheduleMode() {
     selectedDate     = null;
     selectedTimeSlot = null;
     scheduleQueue    = [];
+    selectedDates    = new Set();
 
-    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected', 'multi-selected'));
 
     renderModeBanner();
     renderTimeSlots();
@@ -301,24 +303,37 @@ function renderQueueItems() {
         return `
             <div class="queue-hint">
                 <i class="fas fa-calendar-plus"></i>
-                <span>Select a date, then tap any time slot to add it to the queue.</span>
+                <span>Select dates on the calendar, then tap time slots to queue them.</span>
             </div>`;
     }
 
-    return `<div class="queue-list">
-        ${scheduleQueue.map((s, i) => `
-            <div class="queue-item">
-                <div class="queue-item-num">${i + 1}</div>
-                <div class="queue-item-info">
-                    <div class="queue-item-date">${formatDate(s.date)}</div>
-                    <div class="queue-item-time"><i class="far fa-clock" style="margin-right:4px;"></i>${s.timeSlot}</div>
-                </div>
-                <button class="queue-remove-btn" onclick="removeFromQueue(${i})" title="Remove">
-                    <i class="fas fa-times"></i>
-                </button>
+    // Group by date for display
+    const byDate = {};
+    scheduleQueue.forEach((s, i) => {
+        if (!byDate[s.date]) byDate[s.date] = [];
+        byDate[s.date].push({ ...s, idx: i });
+    });
+
+    const groups = Object.entries(byDate).map(([date, slots]) => `
+        <div class="queue-date-group">
+            <div class="queue-date-label">
+                <i class="far fa-calendar" style="margin-right:6px;opacity:0.6;"></i>${formatDate(date)}
+                <span class="queue-date-slot-count">${slots.length} slot${slots.length > 1 ? 's' : ''}</span>
             </div>
-        `).join('')}
-    </div>`;
+            ${slots.map(s => `
+                <div class="queue-item">
+                    <div class="queue-item-info">
+                        <div class="queue-item-time"><i class="far fa-clock" style="margin-right:5px;opacity:0.7;"></i>${s.timeSlot}</div>
+                    </div>
+                    <button class="queue-remove-btn" onclick="removeFromQueue(${s.idx})" title="Remove">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('')}
+        </div>
+    `).join('');
+
+    return `<div class="queue-list">${groups}</div>`;
 }
 
 function refreshQueuePanel() {
@@ -331,7 +346,13 @@ function refreshQueuePanel() {
 
 
 function removeFromQueue(index) {
+    const removed = scheduleQueue[index];
     scheduleQueue.splice(index, 1);
+    // If no more slots for that date, deselect it on the calendar
+    if (removed && !scheduleQueue.some(s => s.date === removed.date)) {
+        selectedDates.delete(removed.date);
+        renderCalendar();
+    }
     refreshQueuePanel();
     updateFormState();
 }
@@ -400,7 +421,15 @@ function selectTimeSlot(slot, element) {
         const existingIdx = scheduleQueue.findIndex(s => s.date === selectedDate && s.timeSlot === slot);
         if (existingIdx >= 0) {
             scheduleQueue.splice(existingIdx, 1);
+            // If no more slots for this date, remove it from selectedDates too
+            const stillHasSlots = scheduleQueue.some(s => s.date === selectedDate);
+            if (!stillHasSlots) {
+                selectedDates.delete(selectedDate);
+                renderCalendar();
+            }
         } else {
+            // Ensure the date is tracked as selected
+            selectedDates.add(selectedDate);
             scheduleQueue.push({ date: selectedDate, timeSlot: slot });
         }
         renderTimeSlots();
@@ -505,7 +534,7 @@ async function handleBatchSubmit() {
     try {
         const data = await apiCall('/api/reservations/batch', 'POST', {
             lab:         currentLab,
-            slots:       scheduleQueue.map(s => ({ date: s.date, timeSlot: s.timeSlot })),
+            slots:       scheduleQueue.map(s => ({ date: s.date, timeSlot: s.timeSlot })), // grouped submission
             teacherName, subject, grade, students, purpose
         });
 
@@ -514,8 +543,9 @@ async function handleBatchSubmit() {
         scheduleQueue    = [];
         selectedDate     = null;
         selectedTimeSlot = null;
+        selectedDates    = new Set();
         document.getElementById('reservation-form')?.reset();
-        document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected', 'multi-selected'));
         renderTimeSlots();
         renderQueuePanel();
         updateFormState();
@@ -876,10 +906,12 @@ function updateFormState() {
         }
         const selectedInfo = document.getElementById('selected-info');
         if (selectedInfo) {
-            if (selectedDate) {
-                selectedInfo.innerHTML = `<p><strong>Date:</strong> ${formatDate(selectedDate)} — tap time slots to queue them</p>`;
+            if (selectedDate && selectedDates.has(selectedDate)) {
+                selectedInfo.innerHTML = `<p><strong>${formatDate(selectedDate)}</strong> — tap time slots to queue them</p>`;
+            } else if (selectedDate) {
+                selectedInfo.innerHTML = `<p style="color:#707475;">Viewing <strong>${formatDate(selectedDate)}</strong> — click a date on the calendar to select it</p>`;
             } else {
-                selectedInfo.innerHTML = "<p style='color:#707475;'>Select a date, then tap time slots to add to queue</p>";
+                selectedInfo.innerHTML = "<p style='color:#707475;'>Click dates on the calendar, then tap time slots</p>";
             }
         }
     } else {
@@ -1224,7 +1256,8 @@ function renderMonthlyView() {
         const isPast  = new Date(currentYear, currentMonth, day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
         if (isToday) dayEl.classList.add('today');
-        if (dateStr === selectedDate) dayEl.classList.add('selected');
+        if (!multiScheduleMode && dateStr === selectedDate) dayEl.classList.add('selected');
+        if (multiScheduleMode && selectedDates.has(dateStr)) dayEl.classList.add('multi-selected');
         if (hasReservations(dateStr)) dayEl.classList.add('has-reservations');
 
         if (role === 'Admin') {
@@ -1284,7 +1317,8 @@ function renderWeeklyView() {
         const isPast  = d < new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
         if (isToday) dayEl.classList.add('today');
-        if (dateStr === selectedDate) dayEl.classList.add('selected');
+        if (!multiScheduleMode && dateStr === selectedDate) dayEl.classList.add('selected');
+        if (multiScheduleMode && selectedDates.has(dateStr)) dayEl.classList.add('multi-selected');
         if (hasReservations(dateStr)) dayEl.classList.add('has-reservations');
 
         if (role === 'Admin') {
@@ -1345,15 +1379,33 @@ function renderDailyView() {
 }
 
 function handleDateSelect(dateStr, dayEl) {
+    if (multiScheduleMode) {
+        // Toggle date in/out of selectedDates set
+        if (selectedDates.has(dateStr)) {
+            selectedDates.delete(dateStr);
+            // Also remove any queued slots for this date
+            scheduleQueue = scheduleQueue.filter(s => s.date !== dateStr);
+            dayEl.classList.remove('multi-selected');
+        } else {
+            selectedDates.add(dateStr);
+            dayEl.classList.add('multi-selected');
+        }
+        // Always show the most recently clicked date's time slots
+        selectedDate     = dateStr;
+        selectedTimeSlot = null;
+        renderTimeSlots();
+        renderQueuePanel();
+        updateFormState();
+        return;
+    }
+
+    // Single mode — normal behaviour
     document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
     dayEl.classList.add('selected');
     selectedDate     = dateStr;
     selectedTimeSlot = null;
     renderTimeSlots();
     updateFormState();
-
-    // In multi-mode, keep queue panel in sync
-    if (multiScheduleMode) renderQueuePanel();
 }
 
 function handleAdminDateClick(dateStr, dayEl) {

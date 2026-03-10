@@ -577,3 +577,77 @@
     border-color: #ef4444 !important;
     color: white !important;
 }
+
+/* ── Multi-selected calendar day ── */
+.calendar-day.multi-selected {
+    background: #081316 !important;
+    color: white !important;
+    border-radius: 50%;
+    position: relative;
+}
+
+.calendar-day.multi-selected::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.6);
+}
+
+[data-theme="dark"] .calendar-day.multi-selected {
+    background: #ffffff !important;
+    color: #081316 !important;
+}
+
+/* ── Queue date groups ── */
+.queue-date-group {
+    margin-bottom: 12px;
+}
+
+.queue-date-group:last-child {
+    margin-bottom: 0;
+}
+
+.queue-date-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--secondary-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 4px 6px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 6px;
+}
+
+.queue-date-slot-count {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--hover-bg);
+    border-radius: 20px;
+    padding: 1px 7px;
+    color: var(--secondary-text);
+}
+
+.queue-date-group .queue-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+}
+
+.queue-date-group .queue-item:last-child {
+    margin-bottom: 0;
+}
+
+.queue-item-time {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+}
