@@ -117,6 +117,7 @@
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
+    transition: color 0.3s ease;
 }
 
 .mode-toggle-switch {
@@ -133,6 +134,7 @@
     position: absolute;
 }
 
+/* ── Track ── */
 .mode-toggle-track {
     position: absolute;
     inset: 0;
@@ -140,19 +142,38 @@
     background: var(--hover-bg);
     border: 2px solid var(--input-border);
     cursor: pointer;
-    transition: background 0.3s ease, border-color 0.3s ease;
+    overflow: hidden;
+    transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
 }
 
 .mode-toggle-switch input:checked + .mode-toggle-track {
     background: #081316;
     border-color: #081316;
+    box-shadow: 0 0 0 3px rgba(8, 19, 22, 0.15), 0 2px 8px rgba(8, 19, 22, 0.3);
 }
 
 [data-theme="dark"] .mode-toggle-switch input:checked + .mode-toggle-track {
     background: #ffffff;
     border-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.15), 0 2px 8px rgba(255,255,255,0.2);
 }
 
+/* Ripple layer inside the track */
+.mode-toggle-track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.18) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+
+.mode-toggle-switch input:checked + .mode-toggle-track::before {
+    opacity: 1;
+}
+
+/* ── Thumb ── */
 .mode-toggle-track::after {
     content: '';
     position: absolute;
@@ -162,17 +183,54 @@
     height: 18px;
     border-radius: 50%;
     background: var(--secondary-text);
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    transition:
+        left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+        width 0.18s ease,
+        background 0.35s ease,
+        box-shadow 0.35s ease;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.25);
+    will-change: left, width;
+}
+
+/* Squish the thumb while dragging (active state) */
+.mode-toggle-switch:active .mode-toggle-track::after {
+    width: 22px;
+}
+
+/* Squish toward the right when active+checked */
+.mode-toggle-switch:active input:checked + .mode-toggle-track::after {
+    left: 23px;
+    width: 22px;
 }
 
 .mode-toggle-switch input:checked + .mode-toggle-track::after {
     left: 27px;
     background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 [data-theme="dark"] .mode-toggle-switch input:checked + .mode-toggle-track::after {
     background: #081316;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* ── Focus ring ── */
+.mode-toggle-switch input:focus-visible + .mode-toggle-track {
+    outline: 2px solid #081316;
+    outline-offset: 2px;
+}
+
+[data-theme="dark"] .mode-toggle-switch input:focus-visible + .mode-toggle-track {
+    outline-color: #ffffff;
+}
+
+/* ── Label highlight when active ── */
+.mode-toggle-switch input:checked ~ .mode-toggle-label-text {
+    color: #081316;
+}
+
+[data-theme="dark"] .mode-toggle-switch input:checked ~ .mode-toggle-label-text {
+    color: #ffffff;
 }
 
 /* ── Queue Panel ── */
