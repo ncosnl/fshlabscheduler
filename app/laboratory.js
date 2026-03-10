@@ -288,11 +288,6 @@ function renderQueuePanel() {
                     Queued Slots
                     <span class="queue-count-pill" id="queue-count-pill">${scheduleQueue.length}</span>
                 </div>
-                <button class="queue-add-btn" id="queue-add-btn"
-                    onclick="addToQueue()"
-                    ${(!selectedDate || !selectedTimeSlot) ? 'disabled' : ''}>
-                    <i class="fas fa-plus"></i> Add Slot
-                </button>
             </div>
             <div id="queue-list-container">
                 ${renderQueueItems()}
@@ -306,7 +301,7 @@ function renderQueueItems() {
         return `
             <div class="queue-hint">
                 <i class="fas fa-calendar-plus"></i>
-                <span>Select a date and time slot on the calendar above, then click <strong>Add Slot</strong></span>
+                <span>Select a date, then tap any time slot to add it to the queue.</span>
             </div>`;
     }
 
@@ -327,35 +322,13 @@ function renderQueueItems() {
 }
 
 function refreshQueuePanel() {
-    // Lightweight refresh — only update inner parts without full re-render
     const pill      = document.getElementById('queue-count-pill');
-    const addBtn    = document.getElementById('queue-add-btn');
     const container = document.getElementById('queue-list-container');
-
-    if (pill)      pill.textContent  = scheduleQueue.length;
-    if (addBtn)    addBtn.disabled   = !selectedDate || !selectedTimeSlot;
+    if (pill)      pill.textContent    = scheduleQueue.length;
     if (container) container.innerHTML = renderQueueItems();
 }
 
-function addToQueue() {
-    if (!selectedDate || !selectedTimeSlot) return;
 
-    // Prevent duplicate
-    if (scheduleQueue.some(s => s.date === selectedDate && s.timeSlot === selectedTimeSlot)) {
-        showInlineToast('This slot is already in your queue.', 'warn');
-        return;
-    }
-
-    scheduleQueue.push({ date: selectedDate, timeSlot: selectedTimeSlot });
-
-    // Clear selection so user picks next slot
-    selectedDate     = null;
-    selectedTimeSlot = null;
-    document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
-    renderTimeSlots();
-    updateFormState();
-    refreshQueuePanel();
-}
 
 function removeFromQueue(index) {
     scheduleQueue.splice(index, 1);
@@ -393,12 +366,18 @@ function renderTimeSlots() {
         slotEl.className = 'time-slot';
 
         const isReserved = selectedDate && isSlotReserved(selectedDate, slot);
+        const isQueued   = multiScheduleMode && selectedDate &&
+                           scheduleQueue.some(s => s.date === selectedDate && s.timeSlot === slot);
 
         if (isReserved) {
             slotEl.classList.add('reserved');
             slotEl.innerHTML = `${slot} <span style="font-size:11px;color:#ef4444;">(Reserved)</span>`;
             slotEl.style.cursor  = 'not-allowed';
             slotEl.style.opacity = '0.6';
+        } else if (isQueued) {
+            slotEl.classList.add('queued');
+            slotEl.innerHTML = `${slot} <i class="fas fa-check" style="font-size:11px;margin-left:5px;"></i>`;
+            slotEl.onclick = () => selectTimeSlot(slot, slotEl);
         } else {
             slotEl.textContent = slot;
             slotEl.onclick = () => selectTimeSlot(slot, slotEl);
@@ -416,16 +395,25 @@ function selectTimeSlot(slot, element) {
         return;
     }
 
+    if (multiScheduleMode) {
+        // Instant toggle: click to queue, click again to remove
+        const existingIdx = scheduleQueue.findIndex(s => s.date === selectedDate && s.timeSlot === slot);
+        if (existingIdx >= 0) {
+            scheduleQueue.splice(existingIdx, 1);
+        } else {
+            scheduleQueue.push({ date: selectedDate, timeSlot: slot });
+        }
+        renderTimeSlots();
+        refreshQueuePanel();
+        updateFormState();
+        return;
+    }
+
+    // Single mode — normal behaviour
     document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
     selectedTimeSlot = slot;
     updateFormState();
-
-    // In multi-mode, refresh the Add Slot button state in the queue panel
-    if (multiScheduleMode) {
-        const addBtn = document.getElementById('queue-add-btn');
-        if (addBtn) addBtn.disabled = false;
-    }
 }
 
 async function handleReservationSubmit(e) {
@@ -888,13 +876,10 @@ function updateFormState() {
         }
         const selectedInfo = document.getElementById('selected-info');
         if (selectedInfo) {
-            if (selectedDate && selectedTimeSlot) {
-                selectedInfo.innerHTML = `
-                    <p><strong>Selected:</strong> ${formatDate(selectedDate)} — ${selectedTimeSlot}</p>
-                    <p style="color:var(--secondary-text);font-size:13px;">Click <strong>Add Slot</strong> in the queue to include this slot.</p>
-                `;
+            if (selectedDate) {
+                selectedInfo.innerHTML = `<p><strong>Date:</strong> ${formatDate(selectedDate)} — tap time slots to queue them</p>`;
             } else {
-                selectedInfo.innerHTML = "<p style='color:#707475;'>Pick a date and time slot, then add to queue</p>";
+                selectedInfo.innerHTML = "<p style='color:#707475;'>Select a date, then tap time slots to add to queue</p>";
             }
         }
     } else {

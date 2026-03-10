@@ -551,3 +551,29 @@
 
     .queue-panel { padding: 16px; border-radius: 14px; }
 }
+
+/* ── Queued time slot state (multi-mode) ── */
+.time-slot.queued {
+    background: #081316 !important;
+    color: white !important;
+    border-color: #081316 !important;
+    position: relative;
+}
+
+[data-theme="dark"] .time-slot.queued {
+    background: #ffffff !important;
+    color: #081316 !important;
+    border-color: #ffffff !important;
+}
+
+.time-slot.queued:hover {
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .time-slot.queued:hover {
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
