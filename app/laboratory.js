@@ -331,6 +331,22 @@ async function handleReservationSubmit(e) {
             return;
         }
 
+        // Validate form fields (bypassed in multi-mode since we call apiCall directly)
+        const teacherName = document.getElementById('teacher-name').value.trim();
+        const subject     = document.getElementById('subject').value;
+        const grade       = document.getElementById('grade').value;
+        const students    = document.getElementById('students').value.trim();
+        const purpose     = document.getElementById('purpose').value.trim();
+
+        if (!teacherName || !subject || !grade || !students || !purpose) {
+            alert('Please fill in all reservation details before submitting.');
+            return;
+        }
+        if (isNaN(parseInt(students)) || parseInt(students) < 1) {
+            alert('Please enter a valid number of students.');
+            return;
+        }
+
         const submitBtn = document.getElementById('submit-reservation');
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Checking conflicts...'; }
 
@@ -376,11 +392,11 @@ async function handleReservationSubmit(e) {
                 lab:         currentLab,
                 dates:       okCombos.map(c => c.date),
                 timeSlots:   okCombos.map(c => c.timeSlot),
-                teacherName: document.getElementById('teacher-name').value,
-                subject:     document.getElementById('subject').value,
-                grade:       document.getElementById('grade').value,
-                students:    document.getElementById('students').value,
-                purpose:     document.getElementById('purpose').value
+                teacherName,
+                subject,
+                grade,
+                students,
+                purpose
             });
 
             if (!data.success) { alert(data.message); return; }
